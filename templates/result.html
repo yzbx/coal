@@ -1,0 +1,39 @@
+<title>{{title}}</title>
+<h1>pid = {{pid}}</h1>
+<h1>status = {{status}}</h1>
+<h1>is_running = {{is_running}}</h1>
+
+
+
+<h2>start task</h2>
+<form action="/longtask" method="post">
+video_url: <input type="text" value={{video_url}} name="video_url" />
+task_name: <input type="text" value={{task_name}} name="task_name" />
+others: <input type="text" value={{others}} name="others" />
+<input type="submit" value="Submit" />
+</form>
+
+<form action="/longtask" method="get">
+video_url: <input type="text" value={{video_url}} name="video_url" />
+task_name: <input type="text" value={{task_name}} name="task_name" />
+others: <input type="text" value={{others}} name="others" />
+<input type="submit" value="Submit" />
+</form>
+
+
+<h2>stop task</h2>
+<form action="/stoptask" method="post">
+video_url: <input type="text" value={{video_url}} name="video_url" />
+task_name: <input type="text" value={{task_name}} name="task_name" />
+others: <input type="text" value={{others}} name="others" />
+<input type="submit" value="Submit" />
+</form>
+
+<form action="/stoptask" method="get">
+video_url: <input type="text" value={{video_url}} name="video_url" />
+task_name: <input type="text" value={{task_name}} name="task_name" />
+others: <input type="text" value={{others}} name="others" />
+<input type="submit" value="Submit" />
+</form>
+
+<a href="/taskresult/{{pid}}">view task result</a>
