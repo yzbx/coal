@@ -7,6 +7,7 @@ import multiprocessing
 import psutil
 import time
 import json
+import argparse
 
 flask_app = Flask(__name__)
 app_config=[]
@@ -104,4 +105,7 @@ def stoptask():
         
     
 if __name__ == '__main__':
-    flask_app.run(debug=True, host='0.0.0.0', port=5005)
+    parser=argparse.ArgumentParser()
+    parser.add_argument('-p','--port',help='port for web application',default=5005,type=int)
+    args=parser.parse_args()
+    flask_app.run(debug=True, host='0.0.0.0', port=args.port)
