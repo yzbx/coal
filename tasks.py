@@ -1,5 +1,5 @@
-from flask import Flask,Response
-from utils import detection,video_player
+from flask import Flask,Response,stream_with_context
+from web_utils import detection,video_player,app_player
 from flask import request, jsonify
 from flask import render_template,redirect,url_for
 import subprocess
@@ -145,7 +145,7 @@ def start_demo():
         else:
             data[key]=value
     
-    return Response(video_player(data['video_url']).gen(),
+    return Response(stream_with_context(app_player(data['video_url']).gen()),
                     mimetype='multipart/x-mixed-replace; boundary=frame')
         
 if __name__ == '__main__':
