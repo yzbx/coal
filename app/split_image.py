@@ -5,7 +5,6 @@ import numpy as np
 import glob
 import os
 import matplotlib.pyplot as plt
-import imageio
 
 def split_image(image,target_size,draw_split=False):
     """

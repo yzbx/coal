@@ -17,15 +17,10 @@ class app_player():
         
     def gen(self):
         if self.app=='yolov3':
-            idx=0
             for img in yolov3_detect(self.video_url):
                 print('app_player',img.shape)
-                cv2.imwrite(str(idx)+'.jpg',img)
                 time.sleep(1)
                 ret, img = cv2.imencode('.jpg', img)
-                idx+=1
-                if idx>5:
-                    break
                 frame=img.tobytes()
                 yield (b'--frame\r\n'
                        b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n\r\n')
