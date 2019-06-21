@@ -18,8 +18,6 @@ class app_player():
     def gen(self):
         if self.app=='yolov3':
             for img in yolov3_detect(self.video_url):
-                print('app_player',img.shape)
-                time.sleep(1)
                 ret, img = cv2.imencode('.jpg', img)
                 frame=img.tobytes()
                 yield (b'--frame\r\n'
