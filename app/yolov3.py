@@ -10,6 +10,15 @@ from model.yolov3.utils.utils import *
 from app.split_image import split_image,merge_image,yolov3_loadImages,yolov3_loadVideo
 import numpy as np
 from easydict import EasyDict as edict
+
+def filter_detection(det_results):
+    """
+    remove other object
+    """
+    target_objects=['person','bicycle','car','motorbike']
+    det=det_results
+    return det
+
 def detect(
         cfg,
         data_cfg,
@@ -68,6 +77,19 @@ def detect(
             pred, _ = model(img)
             det = non_max_suppression(pred, conf_thres, nms_thres)[0]
             
+            if det is not None:
+                det_idx=[]
+                for c in det[:,-1]:
+                    if classes[int(c)] not in ['car','person','bicycle','motorbike','truck']:
+                        print('filter out',classes[int(c)])
+                        det_idx.append(0)
+                    else:
+                        det_idx.append(1)
+                if np.any(det_idx):
+                    det=det[torch.from_numpy(np.array(det_idx)).to(device).eq(1),:]
+                else:
+                    det=None
+                
             det_results.append(det)
             if det is not None and len(det) > 0:
                 # Rescale boxes from 416 to true image size
@@ -98,16 +120,23 @@ def yolov3_detect(video_url):
     opt.data_cfg='app/config/coco.data'
     opt.weights='app/config/yolov3.weights'
     opt.video_url=video_url
+    opt.img_size=int(416*1.5)
     with torch.no_grad():
         gen=detect(
             opt.cfg,
             opt.data_cfg,
             opt.weights,
-            video_url=opt.video_url
+            video_url=opt.video_url,
+            img_size=opt.img_size,
         )
         
+        idx=0
         for img in gen:
-            yield img
+            if idx>30:
+                idx=0
+                yield img
+            else:
+                idx+=1
     
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
