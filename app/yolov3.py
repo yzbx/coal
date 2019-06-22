@@ -106,13 +106,14 @@ def detect(
                     # Add bbox to the image
                     label = '%s %.2f' % (classes[int(cls)], conf)
                     plot_one_box(xyxy, split_img, label=label, color=colors[int(cls)])
-                    
-            draw_imgs.append(split_img)
-        draw_img=merge_image(draw_imgs,img_size,origin_img.shape,det_results)
-        #result=non_max_suppression(det_results,conf_thres,nms_thres)[0]
-        print('Done. (%.3fs)' % (time.time() - t))
-        #draw_img,result
-        yield draw_img
+                
+                yield split_img
+#            draw_imgs.append(split_img)
+#        draw_img=merge_image(draw_imgs,img_size,origin_img.shape,det_results)
+#        #result=non_max_suppression(det_results,conf_thres,nms_thres)[0]
+#        print('Done. (%.3fs)' % (time.time() - t))
+#        #draw_img,result
+#        yield draw_img
 
 def yolov3_detect(video_url):
     opt=edict()
@@ -120,7 +121,7 @@ def yolov3_detect(video_url):
     opt.data_cfg='app/config/coco.data'
     opt.weights='app/config/yolov3.weights'
     opt.video_url=video_url
-    opt.img_size=int(416*1.5)
+    opt.img_size=416
     with torch.no_grad():
         gen=detect(
             opt.cfg,
