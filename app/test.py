@@ -13,13 +13,15 @@ class TestMethods(unittest.TestCase):
           'database':'qingdao',}
         
         if not os.path.exists('config.json'):
-            json.dump(cfg,open('config.json','w'))
+            with open('config.json','r') as f:
+                json.dump(cfg,f)
         self.assertTrue(True)
         
     def test_database(self):
         import mysql.connector
-
-        config=json.load(open('config.json','r'))
+        with open('config.json','r') as f:
+            config=json.load(f)
+            
         mydb = mysql.connector.connect(
           host=config['host'],
           user=config['user'],
@@ -65,8 +67,8 @@ class TestMethods(unittest.TestCase):
         
     def test_columns(self):
         import mysql.connector
-        
-        config=json.load(open('config.json','r'))
+        with open('config.json','r') as f:
+            config=json.load(f)
         mydb = mysql.connector.connect(
           host=config['host'],
           user=config['user'],
@@ -107,7 +109,8 @@ class TestMethods(unittest.TestCase):
         from sqlalchemy.sql import select
         from database import metadata,mtrp_alarm,mtrp_alarm_type
 #        engine = create_engine('sqlite:///sqlite.db', echo=True)
-        config=json.load(open('config.json','r'))
+        with open('config.json','r') as f:
+            config=json.load(f)
         engine = create_engine('mysql://{}:{}@{}:{}/{}'.format(config['user'],
                                config['passwd'],
                                config['host'],
@@ -137,7 +140,8 @@ class TestMethods(unittest.TestCase):
         
     def test_mysql_connector(self):
         import mysql.connector
-        config=json.load(open('config.json','r'))
+        with open('config.json','r') as f:
+            config=json.load(f)
         mydb = mysql.connector.connect(
           host=config['host'],
           user=config['user'],
