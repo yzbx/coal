@@ -4,6 +4,7 @@ from sys import platform
 import os
 import sys
 sys.path.insert(0,'./model/yolov3')
+
 from model.yolov3.models import *
 from model.yolov3.utils.datasets import *
 from model.yolov3.utils.utils import *
