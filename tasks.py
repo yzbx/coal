@@ -58,7 +58,7 @@ def database():
     tables=[]
     for x in mycursor:
       print(x)
-      tables.append(x)
+      tables.append(str(x))
     
     mycursor.close()
     return "tables: "+' '.join(tables)
