@@ -15,12 +15,14 @@ class TestMethods(unittest.TestCase):
         if not os.path.exists('config.json'):
             with open('config.json','r') as f:
                 json.dump(cfg,f)
+                f.close()
         self.assertTrue(True)
         
     def test_database(self):
         import mysql.connector
         with open('config.json','r') as f:
             config=json.load(f)
+            f.close()
             
         mydb = mysql.connector.connect(
           host=config['host'],
@@ -40,12 +42,15 @@ class TestMethods(unittest.TestCase):
           print(x)
           databases.append(x)
         
+        mycursor.close()
         self.assertTrue(len(databases)>0)
     
     def test_table(self):
         import mysql.connector
         
-        config=json.load(open('config.json','r'))
+        with open('config.json','r') as f:
+            config=json.load(f)
+            f.close()
         mydb = mysql.connector.connect(
           host=config['host'],
           user=config['user'],
@@ -63,12 +68,14 @@ class TestMethods(unittest.TestCase):
           print(x)
           tables.append(x)
         
+        mycursor.close()
         self.assertTrue(len(tables)>0)
         
     def test_columns(self):
         import mysql.connector
         with open('config.json','r') as f:
             config=json.load(f)
+            f.close()
         mydb = mysql.connector.connect(
           host=config['host'],
           user=config['user'],
@@ -93,15 +100,21 @@ class TestMethods(unittest.TestCase):
           print(x)
           results.append(x)
         
+        mycursor.close()
         self.assertTrue(len(results)>0)
         
     def test_upload(self):
         import requests
         url='http://10.50.200.171:8080/mtrp/file/json/upload.jhtml'
-        files = {'file': open('test.png', 'rb')}
-        r = requests.post(url, files=files)
-        print('upload','*'*30)
-        print(r.content)
+        
+        with open('test.png','rb') as f:
+            files = {'file': f}
+            r = requests.post(url, files=files)
+            print('upload','*'*30)
+            print(r.content)
+            r.close()
+            f.close()
+        
         self.assertTrue(r.status_code==200 and r.ok)
         
     def test_sqlalchemy(self):
@@ -111,6 +124,8 @@ class TestMethods(unittest.TestCase):
 #        engine = create_engine('sqlite:///sqlite.db', echo=True)
         with open('config.json','r') as f:
             config=json.load(f)
+            f.close()
+            
         engine = create_engine('mysql://{}:{}@{}:{}/{}'.format(config['user'],
                                config['passwd'],
                                config['host'],
@@ -142,6 +157,8 @@ class TestMethods(unittest.TestCase):
         import mysql.connector
         with open('config.json','r') as f:
             config=json.load(f)
+            f.close()
+            
         mydb = mysql.connector.connect(
           host=config['host'],
           user=config['user'],
@@ -149,6 +166,7 @@ class TestMethods(unittest.TestCase):
           port=config['port'],
         )
         print(mydb)
+        mydb.close()
         self.assertTrue(True)
         
 if __name__ == '__main__':
