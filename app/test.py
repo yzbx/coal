@@ -135,5 +135,17 @@ class TestMethods(unittest.TestCase):
         result.close()
         self.assertTrue(True)
         
+    def test_mysql_connector(self):
+        import mysql.connector
+        config=json.load(open('config.json','r'))
+        mydb = mysql.connector.connect(
+          host=config['host'],
+          user=config['user'],
+          passwd=config['passwd'],
+          port=config['port'],
+        )
+        print(mydb)
+        self.assertTrue(True)
+        
 if __name__ == '__main__':
     unittest.main()

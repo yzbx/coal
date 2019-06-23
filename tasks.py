@@ -8,17 +8,9 @@ import psutil
 import time
 import json
 import argparse
-import mysql.connector
+
 
 flask_app = Flask(__name__)
-
-mydb = mysql.connector.connect(
-  host="localhost",
-  user="iscas",
-  passwd="sketch_123",
-  port=8306,
-)
-
 
 # record video_url, task_name and pid
 app_config=[]
@@ -46,7 +38,7 @@ def demo():
     
 @flask_app.route('/database')
 def database():
-    return "database:"+mydb.__str__()
+    return "database:"
 
 def generate_error(code,app_name,video_url,error_string='',succeed=0,pid=None):
     if pid is None:
