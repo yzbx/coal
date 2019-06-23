@@ -38,7 +38,30 @@ def demo():
     
 @flask_app.route('/database')
 def database():
-    return "database:"
+    import mysql.connector
+        
+    with open('config.json','r') as f:
+        config=json.load(f)
+        f.close()
+    mydb = mysql.connector.connect(
+      host=config['host'],
+      user=config['user'],
+      passwd=config['passwd'],
+      port=config['port'],
+      database=config['database'],
+    )
+
+    mycursor = mydb.cursor()
+
+    mycursor.execute("SHOW TABLES")
+    print('table','*'*30)
+    tables=[]
+    for x in mycursor:
+      print(x)
+      tables.append(x)
+    
+    mycursor.close()
+    return "tables: "+' '.join(tables)
 
 def generate_error(code,app_name,video_url,error_string='',succeed=0,pid=None):
     if pid is None:
