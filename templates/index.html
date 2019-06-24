@@ -40,6 +40,18 @@ others: <input type="text" value={{others}} name="others" />
 <input type="submit" value="Submit" />
 </form>
 
+<h2> upload file</h2>
+<form action="/upload" method="post" enctype="multipart/form-data" >
+　　　<input type="file" name="file" /> <br />
+　　　<input type="submit" value="Upload" />
+</form>
+
+<h2> upload file to server</h2>
+<form action="/upload_to_server" method="post" enctype="multipart/form-data" >
+　　　<input type="file" name="file" /> <br />
+　　　<input type="submit" value="Upload" />
+</form>
+
 <a href="/task_result/{{pid}}">view task result</a><br>
 <a href="/demo"> view demo </a><br>
 <a href="/database"> view database </a><br>

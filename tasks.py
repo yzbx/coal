@@ -1,6 +1,6 @@
 from flask import Flask,Response,stream_with_context
 from web_utils import detection,video_player,app_player
-from flask import request, jsonify
+from flask import request, jsonify, flash, send_from_directory
 from flask import render_template,redirect,url_for
 import subprocess
 import multiprocessing
@@ -8,10 +8,16 @@ import psutil
 import time
 import json
 import argparse
+import os
+import requests
 
+from werkzeug.utils import secure_filename
+
+UPLOAD_FOLDER = 'media'
+ALLOWED_EXTENSIONS = set(['txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif'])
 
 flask_app = Flask(__name__)
-
+flask_app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 # record video_url, task_name and pid
 app_config=[]
 
@@ -165,7 +171,7 @@ def stop_task():
                                       pid=pid))
         
 
-@flask_app.route('/start_demo')
+@flask_app.route('/start_demo',methods=['POST','GET'])
 def start_demo():
     data={'video_url':None,'task_name':None,'others':None}
     for key in data.keys():
@@ -177,6 +183,55 @@ def start_demo():
     
     return Response(stream_with_context(app_player(data['video_url']).gen()),
                     mimetype='multipart/x-mixed-replace; boundary=frame')
+
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+           
+@flask_app.route('/upload',methods=['POST','GET'])
+def upload():
+    if request.method == 'POST':
+        # check if the post request has the file part
+        if 'file' not in request.files:
+            flash('No file part')
+            return redirect(request.url)
+        file = request.files['file']
+        # if user does not select file, browser also
+        # submit an empty part without filename
+        if file.filename == '':
+            flash('No selected file')
+            return redirect(request.url)
+        if file and allowed_file(file.filename):
+            filename = secure_filename(file.filename)
+            os.makedirs(flask_app.config['UPLOAD_FOLDER'],exist_ok=True)
+            file.save(os.path.join(flask_app.config['UPLOAD_FOLDER'], filename))
+            return redirect(url_for('uploaded_file',
+                                    filename=filename))
+    return ""
+
+@flask_app.route('/uploads/<filename>')
+def uploaded_file(filename):
+    return send_from_directory(flask_app.config['UPLOAD_FOLDER'],
+                               filename)
+    
+@flask_app.route('/upload_to_server',methods=['POST','GET'])
+def upload_to_server():
+    if request.method == 'POST':
+        # check if the post request has the file part
+        if 'file' not in request.files:
+            flash('No file part')
+            return redirect(request.url)
+        file = request.files['file']
+        # if user does not select file, browser also
+        # submit an empty part without filename
+        if file.filename == '':
+            flash('No selected file')
+            return redirect(request.url)
+        
+        url='http://10.50.200.171:8080/mtrp/file/json/upload.jhtml'
+        files = {'file': file}
+        r = requests.post(url, files=files)
+        return r.content
         
 if __name__ == '__main__':
     parser=argparse.ArgumentParser()
