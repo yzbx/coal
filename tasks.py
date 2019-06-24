@@ -229,7 +229,7 @@ def upload_to_server():
             return redirect(request.url)
         
         url='http://10.50.200.171:8080/mtrp/file/json/upload.jhtml'
-        files = {'file': file}
+        files = {'upload': file}
         r = requests.post(url, files=files)
         return r.content
         

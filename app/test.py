@@ -108,7 +108,7 @@ class TestMethods(unittest.TestCase):
         url='http://10.50.200.171:8080/mtrp/file/json/upload.jhtml'
         
         with open('test.png','rb') as f:
-            files = {'file': f}
+            files = {'upload': f}
             r = requests.post(url, files=files)
             print('upload','*'*30)
             print(r.content)
