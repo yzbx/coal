@@ -194,7 +194,7 @@ def start_demo_old():
         else:
             data[key]=value
     
-    return Response(stream_with_context(app_player(data['video_url'],True).gen()),
+    return Response(stream_with_context(app_player(data['video_url'],show_full_img=True).gen()),
                     mimetype='multipart/x-mixed-replace; boundary=frame')
     
 def allowed_file(filename):

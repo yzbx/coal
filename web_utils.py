@@ -11,13 +11,13 @@ def detection(data_json):
     return 0
 
 class app_player():
-    def __init__(self,video_url,app='yolov3'):
+    def __init__(self,video_url,app='yolov3',show_full_img=False):
         self.video_url=video_url
         self.app=app
         
     def gen(self):
         if self.app=='yolov3':
-            for img in yolov3_detect(self.video_url):
+            for img in yolov3_detect(self.video_url,show_full_img):
                 ret, img = cv2.imencode('.jpg', img)
                 frame=img.tobytes()
                 yield (b'--frame\r\n'
