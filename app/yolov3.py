@@ -30,6 +30,7 @@ def detect(
         img_size=416,
         conf_thres=0.5,
         nms_thres=0.5,
+        show_full_img=False,
 ):
     device = torch_utils.select_device()
     if save_result:
@@ -108,15 +109,18 @@ def detect(
                     label = '%s %.2f' % (classes[int(cls)], conf)
                     plot_one_box(xyxy, split_img, label=label, color=colors[int(cls)])
                 
-                yield split_img
-#            draw_imgs.append(split_img)
-#        draw_img=merge_image(draw_imgs,img_size,origin_img.shape,det_results)
+                if not show_full_img:
+                    yield split_img
+            if show_full_img:
+                draw_imgs.append(split_img)
+        if show_full_img:
+            draw_img=merge_image(draw_imgs,img_size,origin_img.shape,det_results)
 #        #result=non_max_suppression(det_results,conf_thres,nms_thres)[0]
 #        print('Done. (%.3fs)' % (time.time() - t))
 #        #draw_img,result
-#        yield draw_img
+            yield draw_img
 
-def yolov3_detect(video_url):
+def yolov3_detect(video_url,show_full_img=False):
     opt=edict()
     opt.cfg='app/config/yolov3.cfg'
     opt.data_cfg='app/config/coco.data'
@@ -130,6 +134,7 @@ def yolov3_detect(video_url):
             opt.weights,
             video_url=opt.video_url,
             img_size=opt.img_size,
+            show_full_img=show_full_img,
         )
         
         idx=0

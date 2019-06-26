@@ -184,6 +184,19 @@ def start_demo():
     return Response(stream_with_context(app_player(data['video_url']).gen()),
                     mimetype='multipart/x-mixed-replace; boundary=frame')
 
+@flask_app.route('/start_demo_old',methods=['POST','GET'])
+def start_demo_old():
+    data={'video_url':None,'task_name':None,'others':None}
+    for key in data.keys():
+        flag,value=get_data(request,key)
+        if not flag:
+            return json.dumps(generate_error(1,'cannot obtain data {}'.format(key)))
+        else:
+            data[key]=value
+    
+    return Response(stream_with_context(app_player(data['video_url'],True).gen()),
+                    mimetype='multipart/x-mixed-replace; boundary=frame')
+    
 def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
