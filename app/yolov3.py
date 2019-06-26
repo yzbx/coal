@@ -82,7 +82,7 @@ def detect(
             if det is not None:
                 det_idx=[]
                 for c in det[:,-1]:
-                    if classes[int(c)] not in ['car','person','bicycle','motorbike','truck']:
+                    if classes[int(c)] not in ['car','bicycle','motorbike','truck']:
                         print('filter out',classes[int(c)])
                         det_idx.append(0)
                     else:
