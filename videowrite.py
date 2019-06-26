@@ -3,9 +3,12 @@
 import os
 import cv2
 import argparse
+import sys
+sys.path.insert(0,'./model/yolov3')
 from model.yolov3.models import *
 from model.yolov3.utils.datasets import *
 from model.yolov3.utils.utils import *
+
 #from model.yolov3.utils.utils import bbox_iou,non_max_suppression
 from app.split_image import split_image
 from easydict import EasyDict as edict
