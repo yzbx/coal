@@ -150,7 +150,7 @@ class yolov3_slideWindows(yolov3_loadImages):
         super().__init__(None,img_size=opt.img_size,preprocess=True)
         self.opt=opt
         self.classes=load_classes(parse_data_cfg(opt.data_cfg)['names'])
-        self.colors=[[random.randint(0, 255) for _ in range(3)] for _ in range(len(classes))]
+        self.colors=[[random.randint(0, 255) for _ in range(3)] for _ in range(len(self.classes))]
         self.model=self.load_model()
     
     def load_model(self):
@@ -179,7 +179,7 @@ class yolov3_slideWindows(yolov3_loadImages):
         
         draw_origin_img=frame.copy()
         if batch_det is not None:
-            merged_det=merge_bbox(batch_det,img_size,origin_img.shape[:2],conf_thres,nms_thres)
+            merged_det=merge_bbox(batch_det,img_size,frame.shape[:2],conf_thres,nms_thres)
             # Draw bounding boxes and labels of detections
             for *xyxy, conf, cls_conf, cls in merged_det:
                 # Add bbox to the image
