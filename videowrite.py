@@ -133,7 +133,7 @@ def filter_label(det,classes,device):
     if det is not None:
         det_idx=[]
         for c in det[:,-1]:
-            if classes[int(c)] not in ['car','person','bicycle','motorbike','truck']:
+            if classes[int(c)] not in ['car','bicycle','motorbike','truck']:
                 print('filter out',classes[int(c)])
                 det_idx.append(0)
             else:
@@ -151,35 +151,36 @@ class yolov3_slideWindows(yolov3_loadImages):
         self.opt=opt
         self.classes=load_classes(parse_data_cfg(opt.data_cfg)['names'])
         self.colors=[[random.randint(0, 255) for _ in range(3)] for _ in range(len(self.classes))]
+        self.device = torch_utils.select_device()
         self.model=self.load_model()
     
     def load_model(self):
-        device = torch_utils.select_device()
         model = Darknet(self.opt.cfg,self.img_size)
         # Load weights
         if self.opt.weights.endswith('.pt'):  # pytorch format
-            model.load_state_dict(torch.load(self.opt.weights, map_location=device)['model'])
+            model.load_state_dict(torch.load(self.opt.weights, map_location=self.device)['model'])
         else:  # darknet format
             _ = load_darknet_weights(model, self.opt.weights)
         # Fuse Conv2d + BatchNorm2d layers
         model.fuse()
     
         # Eval mode
-        model.to(device).eval()
+        model.to(self.device).eval()
         
         return model
     
     def process(self,frame,conf_thres=0.5,nms_thres=0.5):
         split_imgs=split_image(frame,self.img_size)
         resize_imgs=[self.preprocess(img) for img in split_imgs]
-        batch_imgs=torch.stack([torch.from_numpy(img) for img in resize_imgs]).to(device)
+        batch_imgs=torch.stack([torch.from_numpy(img) for img in resize_imgs]).to(self.device)
         batch_pred,_=self.model(batch_imgs)
         #batch_det is a detection result list for img in batch_imgs
         batch_det=non_max_suppression(batch_pred, conf_thres, nms_thres)
         
+        batch_det=[filter_label(det,self.classes,self.device) for det in batch_det]
         draw_origin_img=frame.copy()
         if batch_det is not None:
-            merged_det=merge_bbox(batch_det,img_size,frame.shape[:2],conf_thres,nms_thres)
+            merged_det=merge_bbox(batch_det,self.img_size,frame.shape[:2],conf_thres,nms_thres)
             # Draw bounding boxes and labels of detections
             for *xyxy, conf, cls_conf, cls in merged_det:
                 # Add bbox to the image
@@ -215,6 +216,7 @@ def rtsp2video(rtsp_url,video_path,save_minutes=10):
         if flag:
             detect_result=detector.process(frame)
             writer.write(detect_result)
+            print(idx,'save image to ',video_path)
         else:
             print(idx,'read frame failed!!!',rtsp_url)
         
