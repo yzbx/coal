@@ -123,7 +123,10 @@ def merge_bbox(bboxes,target_size,origin_size,conf_thres=0.5,nms_thres=0.5):
                 det[:,:4]+=torch.tensor([offset[1],offset[0],offset[1],offset[0]]).to(det)
 
                 merged_bbox.append(det)
-                    
+    
+    if len(merged_bbox)==0:
+        return []
+    
     merged_bbox=torch.cat(merged_bbox,dim=0)
     nms_merged_bbox = my_nms(merged_bbox, nms_thres)
 
