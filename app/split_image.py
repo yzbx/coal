@@ -49,7 +49,7 @@ def split_image(image,target_size,draw_split=False):
     else:
         return imgs
     
-def merge_image(imgs,target_size,origin_size,det_results=None):
+def merge_image(imgs,target_size,origin_size):
     if isinstance(target_size,int):
         target_size=(target_size,target_size)
         
@@ -59,7 +59,6 @@ def merge_image(imgs,target_size,origin_size,det_results=None):
     h_num=int(np.floor(h/th))-1
     w_num=int(np.floor(w/tw))-1
     
-    det=[]
     image=np.zeros(origin_size,np.uint8)
     for i in range(h_num):
         for j in range(w_num):

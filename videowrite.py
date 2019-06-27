@@ -4,10 +4,12 @@ import os
 import cv2
 import argparse
 import sys
+import random
 sys.path.insert(0,'./model/yolov3')
-from model.yolov3.models import *
-from model.yolov3.utils.datasets import *
-from model.yolov3.utils.utils import *
+from model.yolov3.models import Darknet,load_darknet_weights
+from model.yolov3.utils.utils import load_classes, non_max_suppression, scale_coords, plot_one_box, bbox_iou
+from model.yolov3.utils.parse_config import parse_data_cfg
+from model.yolov3.utils.torch_utils import select_device
 
 #from model.yolov3.utils.utils import bbox_iou,non_max_suppression
 from app.split_image import split_image,yolov3_loadImages
@@ -154,7 +156,7 @@ class yolov3_slideWindows(yolov3_loadImages):
         self.opt=opt
         self.classes=load_classes(parse_data_cfg(opt.data_cfg)['names'])
         self.colors=[[random.randint(0, 255) for _ in range(3)] for _ in range(len(self.classes))]
-        self.device = torch_utils.select_device()
+        self.device = select_device()
         self.model=self.load_model()
     
     def load_model(self):
@@ -200,6 +202,7 @@ def rtsp2video(rtsp_url,video_path,save_minutes=10):
         return -1
     
     codec = cv2.VideoWriter_fourcc(*"mp4v")
+    #codec = cv2.VideoWriter_fourcc(*"h264")
     fps = reader.get(cv2.CAP_PROP_FPS)
     width = int(reader.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(reader.get(cv2.CAP_PROP_FRAME_HEIGHT))

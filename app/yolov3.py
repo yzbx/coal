@@ -4,10 +4,13 @@ from sys import platform
 import os
 import sys
 sys.path.insert(0,'./model/yolov3')
-
-from model.yolov3.models import *
-from model.yolov3.utils.datasets import *
-from model.yolov3.utils.utils import *
+import torch
+import shutil
+import random
+from model.yolov3.models import Darknet,load_darknet_weights
+from model.yolov3.utils.utils import load_classes, non_max_suppression, scale_coords, plot_one_box
+from model.yolov3.utils.parse_config import parse_data_cfg
+from model.yolov3.utils.torch_utils import select_device
 from app.split_image import split_image,merge_image,yolov3_loadImages,yolov3_loadVideo
 import numpy as np
 from easydict import EasyDict as edict
@@ -32,18 +35,14 @@ def detect(
         nms_thres=0.5,
         show_full_img=False,
 ):
-    device = torch_utils.select_device()
+    device = select_device()
     if save_result:
         if os.path.exists(output):
             shutil.rmtree(output)  # delete output folder
         os.makedirs(output)  # make new output folder
 
     # Initialize model
-    if ONNX_EXPORT:
-        s = (416, 416)  # onnx model image size (height, width)
-        model = Darknet(cfg, s)
-    else:
-        model = Darknet(cfg, img_size)
+    model = Darknet(cfg, img_size)
 
     # Load weights
     if weights.endswith('.pt'):  # pytorch format
@@ -56,11 +55,6 @@ def detect(
 
     # Eval mode
     model.to(device).eval()
-
-    if ONNX_EXPORT:
-        img = torch.zeros((1, 3, s[0], s[1]))
-        torch.onnx.export(model, img, 'weights/export.onnx', verbose=True)
-        return
     
     dataloader = yolov3_loadVideo(video_url,img_size=img_size)
 
@@ -69,10 +63,8 @@ def detect(
     colors = [[random.randint(0, 255) for _ in range(3)] for _ in range(len(classes))]
 
     for i, (path, resize_imgs, split_imgs,origin_img) in enumerate(dataloader):
-        t = time.time()
         
         draw_imgs=[]
-        det_results=[]
         for resize_img,split_img in zip(resize_imgs,split_imgs):
             # Get detections
             img = torch.from_numpy(resize_img).unsqueeze(0).to(device)
@@ -92,7 +84,6 @@ def detect(
                 else:
                     det=None
                 
-            det_results.append(det)
             if det is not None and len(det) > 0:
                 # Rescale boxes from 416 to true image size
                 det[:, :4] = scale_coords(img.shape[2:], det[:, :4], split_img.shape).round()
@@ -114,7 +105,7 @@ def detect(
             if show_full_img:
                 draw_imgs.append(split_img)
         if show_full_img:
-            draw_img=merge_image(draw_imgs,img_size,origin_img.shape,det_results)
+            draw_img=merge_image(draw_imgs,img_size,origin_img.shape)
 #        #result=non_max_suppression(det_results,conf_thres,nms_thres)[0]
 #        print('Done. (%.3fs)' % (time.time() - t))
 #        #draw_img,result
