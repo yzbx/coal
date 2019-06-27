@@ -8,7 +8,9 @@ import matplotlib.pyplot as plt
 
 def split_image(image,target_size,draw_split=False):
     """
+    apply slide window technology on image
     target_size=[th,tw]
+    return images with size >= target_size
     """
     if isinstance(target_size,int):
         target_size=(target_size,target_size)
@@ -57,6 +59,7 @@ def merge_image(imgs,target_size,origin_size,det_results=None):
     h_num=int(np.floor(h/th))-1
     w_num=int(np.floor(w/tw))-1
     
+    det=[]
     image=np.zeros(origin_size,np.uint8)
     for i in range(h_num):
         for j in range(w_num):
@@ -80,6 +83,21 @@ def merge_image(imgs,target_size,origin_size,det_results=None):
                 
     return image
 
+def preprocess(pre_img,img_size,do_preprocess):
+    """
+    preprocess image for yolov3 network
+    """
+    # Padded resize
+    img=cv2.resize(pre_img,tuple(img_size),interpolation=cv2.INTER_LINEAR)
+
+    # Normalize RGB
+    if do_preprocess:
+        img = img[:, :, ::-1].transpose(2, 0, 1)  # BGR to RGB, HWC to CHW
+        img = np.ascontiguousarray(img, dtype=np.float32)  # uint8 to float32
+        img /= 255.0  # 0 - 255 to 0.0 - 1.0
+    
+    return img
+    
 class yolov3_loadImages:
     def __init__(self,path,img_size=[416,416],preprocess=True):
         if isinstance(img_size,int):
@@ -112,16 +130,7 @@ class yolov3_loadImages:
         return path,resize_imgs,split_imgs,origin_img
     
     def preprocess(self,pre_img):
-        # Padded resize
-        img=cv2.resize(pre_img,tuple(self.img_size),interpolation=cv2.INTER_LINEAR)
-
-        # Normalize RGB
-        if self.do_preprocess:
-            img = img[:, :, ::-1].transpose(2, 0, 1)  # BGR to RGB
-            img = np.ascontiguousarray(img, dtype=np.float32)  # uint8 to float32
-            img /= 255.0  # 0 - 255 to 0.0 - 1.0
-        
-        return img
+        return preprocess(pre_img,self.img_size,self.do_preprocess)
     
 class yolov3_loadVideo(yolov3_loadImages):
     def __init__(self,video_url,img_size=[416,416],preprocess=True):

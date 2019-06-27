@@ -1,6 +1,7 @@
 import time
 import json
 import cv2
+import os
 from app.yolov3 import yolov3_detect
 def detection(data_json):
     data=json.loads(data_json)
@@ -9,7 +10,51 @@ def detection(data_json):
         time.sleep(1)
 
     return 0
-
+class video_buffer():
+    def __init__(self,buffer_size=1200):
+        self.buffer_size=buffer_size
+        self.current_frame=-1
+        self.buffer=[]
+        
+    def update(self,frame):
+        self.current_frame+=1
+        if self.current_frame>=self.buffer_size:
+            self.current_frame=0
+        
+        self.buffer[self.current_frame]=frame
+    
+class video_saver():
+    def __init__(self,video_buffer,save_seconds=600):
+        self.video_buffer=video_buffer
+        self.video_size=save_seconds*30
+        self.key_frame=video_buffer.current_frame
+        self.writer=None
+        video_name=str(int(time.time()))+'.mp4'
+        self.video_path=os.path.join('media',video_name)
+        self.frame_number=0
+        
+        assert self.video_buffer.buffer_size>=self.video_size 
+        for idx in range(self.key_frame-self.video_size//2,self.key_frame+1):
+            valid_idx=(idx+self.video_buffer.buffer_size)%self.video_buffer.buffer_size
+            self.write(self.video_buffer.buffer[valid_idx])
+        
+    def write(self,frame):
+        if self.writer is None:
+            codec = cv2.VideoWriter_fourcc(*"mp4v")
+            fps = 30
+            height,width=frame.shape[0:2]
+            self.writer = cv2.VideoWriter(self.video_path, codec, fps, (width, height))
+        
+        self.writer.write(frame)
+        self.frame_number+=1
+        
+        if self.frame_number>self.video_size:
+            assert False
+        
+    def close(self):
+        if self.writer is not None:
+            self.writer.close()
+    
 class app_player():
     def __init__(self,video_url,app='yolov3'):
         self.video_url=video_url
