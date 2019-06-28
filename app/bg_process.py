@@ -15,7 +15,7 @@ class mysql_orm():
         with open('config.json','r') as f:
             config=json.load(f)
 
-        engine = create_engine('mysql+pymysql://{}:{}@{}:{}/{}'.format(config['user'],
+        self.engine=engine = create_engine('mysql+pymysql://{}:{}@{}:{}/{}'.format(config['user'],
                                config['passwd'],
                                config['host'],
                                config['port'],
@@ -27,23 +27,43 @@ class mysql_orm():
         self.mtrp_alarm_type=Table('mtrp_alarm',metadata,autoload=True,
         autoload_with=engine)
 
-
         conn=engine.connect()
         # This will check for the presence of each table first before creating, so it’s safe to call multiple times:
         metadata.create_all(engine)
         self.session = sessionmaker(bind=engine)
-        self.count=0
+        self.bbox_count={}
+        self.alarm=None
+        self.alarm_type=None
 
-    def add(self,bbox):
-        alarm=self.mtrp_alrm()
-        alarm.alarmTime=int(time.time())
-        alarm.content="find {} car".format(10)
-        #todo
-        alarm.fileUrl=''
-        self.session.add(alarm)
+    def add(self,bbox,file_url):
+        # save alarm to mysql dataset if file_url is not None
+        if file_url is not None:
+            self.alarm.content='find'
+            for k,v in self.bbox_count.items():
+                self.alarm.content+=" {} {}".format(v,k)
+            self.alarm.fileUrl=file_url
+            #todo
+            self.session.add(alarm)
+            self.session.new()
+            self.session.commit()
+            self.session.close()
+            self.session=sessionmaker(bind=self.engine)
+            self.alarm=None
+            self.alarm_type=None
 
-    def commit(self):
-        self.session.commit()
+        # count for bbox
+        if self.alarm is None:
+            alarm=self.mtrp_alrm()
+            #todo
+            alarm.alarmTime=int(time.time())
+            self.bbox_count={}
+
+        for d in bbox:
+            label=d['label']
+            if label in self.bbox_count.keys():
+                self.bbox_count[label]+=1
+            else:
+                self.bbox_count[label]=1
 
 
 class car_detection():
@@ -61,9 +81,22 @@ class car_detection():
         self.mysql=mysql_orm()
         self.time=time.time()
 
+        self.status="running"
+
     def process(self):
         while True:
             flag,frame=self.reader.read()
             if flag:
                 image,bbox=self.detector.process_slide(frame)
                 yield image
+
+    def bg_process(self):
+        while self.status=='running':
+            flag,frame=self.reader.read()
+            if flag:
+                image,bbox=self.detector.process_slide(frame)
+                file_url=self.writer.write(image)
+                #self.mysql.add(bbox,file_url)
+
+    def stop(self):
+        self.status='stop'

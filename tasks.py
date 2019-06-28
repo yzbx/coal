@@ -10,8 +10,10 @@ import json
 import argparse
 import os
 import requests
-
+from app.bg_process import car_detection
+from app.utils import gen_imencode
 from werkzeug.utils import secure_filename
+from videowrite import MyVideoCapture
 
 UPLOAD_FOLDER = 'media'
 ALLOWED_EXTENSIONS = set(['txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif'])
@@ -41,11 +43,11 @@ def demo():
                             video_url='rtsp://admin:juancheng1@221.1.215.254:554',
                             task_name='detection_car',
                             others='{"date":"%s"}'%date)
-    
+
 @flask_app.route('/database')
 def database():
     import mysql.connector
-        
+
     with open('config.json','r') as f:
         config=json.load(f)
         f.close()
@@ -65,7 +67,7 @@ def database():
     for x in mycursor:
       print(x)
       tables.append(str(x))
-    
+
     mycursor.close()
     return "tables: "+' '.join(tables)
 
@@ -92,7 +94,7 @@ def get_app_id(data):
         if data['video_url']==cfg['video_url'] and \
             data['task_name']==cfg['task_name']:
             return cfg['pid']
-    
+
     return -1
 
 @flask_app.route('/start_task', methods=['POST', 'GET'])
@@ -127,7 +129,7 @@ def task_result(pid):
                                          app_name='task_result',
                                          succeed=1,pid=pid,
                                          error_string=e.__str__()))
-    
+
     return render_template('result.html',
                             title=pid,
                             pid=pid,
@@ -150,7 +152,7 @@ def stop_task():
         else:
             data[key]=value
 
-    pid=get_app_id(data) 
+    pid=get_app_id(data)
     if pid==-1:
         return json.dumps(generate_error(2,video_url=data['video_url'],
                                          app_name='stop_task',
@@ -169,7 +171,6 @@ def stop_task():
                                       app_name='stop_task',
                                       succeed=1,
                                       pid=pid))
-        
 
 @flask_app.route('/start_demo',methods=['POST','GET'])
 def start_demo():
@@ -180,12 +181,12 @@ def start_demo():
             return json.dumps(generate_error(1,'cannot obtain data {}'.format(key)))
         else:
             data[key]=value
-    
-    return Response(stream_with_context(app_player(data['video_url']).gen()),
+    p=car_detection(data['video_url'])
+    return Response(stream_with_context(gen_imencode(p.process())),
                     mimetype='multipart/x-mixed-replace; boundary=frame')
 
-@flask_app.route('/start_demo_old',methods=['POST','GET'])
-def start_demo_old():
+@flask_app.route('/start_play',methods=['POST','GET'])
+def start_play():
     data={'video_url':None,'task_name':None,'others':None}
     for key in data.keys():
         flag,value=get_data(request,key)
@@ -193,14 +194,14 @@ def start_demo_old():
             return json.dumps(generate_error(1,'cannot obtain data {}'.format(key)))
         else:
             data[key]=value
-    
-    return Response(stream_with_context(app_player(data['video_url'],show_full_img=True).gen()),
+    p=MyVideoCapture(data['video_url'])
+    return Response(stream_with_context(gen_imencode(p.process())),
                     mimetype='multipart/x-mixed-replace; boundary=frame')
-    
+
 def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-           
+
 @flask_app.route('/upload',methods=['POST','GET'])
 def upload():
     if request.method == 'POST':
@@ -226,7 +227,7 @@ def upload():
 def uploaded_file(filename):
     return send_from_directory(flask_app.config['UPLOAD_FOLDER'],
                                filename)
-    
+
 @flask_app.route('/upload_to_server',methods=['POST','GET'])
 def upload_to_server():
     if request.method == 'POST':
@@ -240,12 +241,12 @@ def upload_to_server():
         if file.filename == '':
             flash('No selected file')
             return redirect(request.url)
-        
+
         url='http://10.50.200.171:8080/mtrp/file/json/upload.jhtml'
         files = {'upload': file}
         r = requests.post(url, files=files)
         return r.content
-        
+
 if __name__ == '__main__':
     parser=argparse.ArgumentParser()
     parser.add_argument('-p','--port',help='port for web application',default=5005,type=int)

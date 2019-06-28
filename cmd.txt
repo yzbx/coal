@@ -3,3 +3,6 @@ docker run --runtime=nvidia -it -v ~/iscas:/workspace youdaoyzbx/pytorch:1.1_qd 
 # video_url
 - rtsp://admin:Chinsoft@10.50.200.200:554
 - rtsp://admin:Chinsoft@sx3.7766.org:754
+
+# install package
+- pip install -i https://pypi.tuna.tsinghua.edu.cn/simple some-package

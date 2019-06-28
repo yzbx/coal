@@ -16,6 +16,7 @@ from app.split_image import split_image,yolov3_loadImages
 from easydict import EasyDict as edict
 import torch
 import numpy as np
+import requests
 
 def my_nms(pred,nms_thres=0.5):
     """
@@ -139,7 +140,7 @@ def filter_label(det,classes,device):
         det_idx=[]
         for c in det[:,-1]:
             if classes[int(c)] not in ['car','bicycle','motorbike','truck']:
-                print('filter out',classes[int(c)])
+                # print('filter out',classes[int(c)])
                 det_idx.append(0)
             else:
                 det_idx.append(1)
@@ -200,24 +201,29 @@ class yolov3_slideWindows(yolov3_loadImages):
 
         batch_det=[filter_label(det,self.classes,self.device) for det in batch_det]
         draw_origin_img=frame.copy()
+
+        det_dicts=[]
         if batch_det is not None:
             merged_det=merge_bbox(batch_det,self.img_size,frame.shape[:2],conf_thres,nms_thres)
+
             # Draw bounding boxes and labels of detections
             for *xyxy, conf, cls_conf, cls in merged_det:
                 # Add bbox to the image
                 label = '%s %.2f' % (self.classes[int(cls)], conf)
                 plot_one_box(xyxy, draw_origin_img, label=label, color=self.colors[int(cls)])
+                det_dicts.append({'bbox':list(xyxy),'conf':conf,'label':self.classes[int(cls)]})
         else:
             merged_det=None
 
         draw_origin_img=cv2.resize(draw_origin_img,(0, 0),fx=2.0,fy=2.0,interpolation=cv2.INTER_LINEAR)
-
-        return draw_origin_img,merged_det
+        return draw_origin_img,det_dicts
 
 class MyVideoCapture():
     def __init__(self,rtsp_url):
         self.rtsp_url=rtsp_url
         self.cap=cv2.VideoCapture(rtsp_url)
+        self.max_retry_times=10
+        self.retry_times=0
 
     def read(self):
         flag,frame=self.cap.read()
@@ -227,8 +233,25 @@ class MyVideoCapture():
             print('restart video capture')
             self.cap.release()
             self.cap=cv2.VideoCapture(self.rtsp_url)
+            self.retry_times+=1
+            if self.retry_times>self.max_retry_times:
+                assert False
             assert self.cap.isOpened()
             return self.read()
+
+    def process(self):
+        flag,frame=self.cap.read()
+        if flag:
+            yield frame
+        else:
+            print('restart video capture')
+            self.cap.release()
+            self.cap=cv2.VideoCapture(self.rtsp_url)
+            self.retry_times+=1
+            if self.retry_times>self.max_retry_times:
+                assert False
+            assert self.cap.isOpened()
+            yield self.process()
 
     def release():
         self.cap.release()
@@ -253,18 +276,40 @@ def MyVideoWriter():
                         (width, height))
         self.frame=0
 
+    def upload(self):
+        """
+        return example: {"fileIp":"10.50.200.107:8888",
+        "fileUrl":"group1/M00/00/00/CjLIa10V-92AUONHAAAACV_xtOE8838105",
+        "success":true}
+        """
+        url='http://10.50.200.171:8080/mtrp/file/json/upload.jhtml'
+        with open(self.video_path,'rb') as file:
+            files = {'upload': file}
+            r = requests.post(url, files=files)
+
+        result=json.loads(r.content)
+        if hasattr(result,'fileUrl'):
+            print('upload',self.video_path,'succeed')
+            return result['fileUrl']
+        else:
+            print('upload',self.video_path,'failed')
+            print('file upload server return',r.content)
+            return None
+
     def write(self,image):
+        file_url=None
         if self.writer is None:
             self.get_writer()
 
         if self.frame==30*60*10:
             self.writer.release()
+            file_url=self.upload()
             self.get_writer()
 
         self.writer.write(image)
         self.frame+=1
 
-        return self.video_path
+        return file_url
 
 
 
