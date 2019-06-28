@@ -20,7 +20,7 @@ import numpy as np
 def my_nms(pred,nms_thres=0.5):
     """
     do the second time nms for slide windows results
-    input format: tensor [x1,y1,x2,y2] 
+    input format: tensor [x1,y1,x2,y2]
     """
     # Get detections sorted by decreasing confidence scores
     pred = pred[(-pred[:, 4]).argsort()]
@@ -89,7 +89,7 @@ def merge_bbox(bboxes,target_size,origin_size,conf_thres=0.5,nms_thres=0.5):
     """
     if isinstance(target_size,int):
         target_size=(target_size,target_size)
-        
+
     h,w=origin_size[0:2]
     th=target_size[0]//2
     tw=target_size[1]//2
@@ -103,12 +103,12 @@ def merge_bbox(bboxes,target_size,origin_size,conf_thres=0.5,nms_thres=0.5):
                 h_end=h
             else:
                 h_end=i*th+2*th
-            
+
             if j==w_num-1:
                 w_end=w
             else:
                 w_end=j*tw+2*tw
-            
+
             idx=i*w_num+j
             # image size in slide window technology >= target_size
             shape=(h_end-i*th,w_end-j*tw)
@@ -125,10 +125,10 @@ def merge_bbox(bboxes,target_size,origin_size,conf_thres=0.5,nms_thres=0.5):
                 det[:,:4]+=torch.tensor([offset[1],offset[0],offset[1],offset[0]]).to(det)
 
                 merged_bbox.append(det)
-    
+
     if len(merged_bbox)==0:
         return []
-    
+
     merged_bbox=torch.cat(merged_bbox,dim=0)
     nms_merged_bbox = my_nms(merged_bbox, nms_thres)
 
@@ -147,7 +147,7 @@ def filter_label(det,classes,device):
             det=det[torch.from_numpy(np.array(det_idx)).to(device).eq(1),:]
         else:
             det=None
-            
+
     return det
 
 class yolov3_slideWindows(yolov3_loadImages):
@@ -158,7 +158,7 @@ class yolov3_slideWindows(yolov3_loadImages):
         self.colors=[[random.randint(0, 255) for _ in range(3)] for _ in range(len(self.classes))]
         self.device = select_device()
         self.model=self.load_model()
-    
+
     def load_model(self):
         model = Darknet(self.opt.cfg,self.img_size)
         # Load weights
@@ -168,20 +168,36 @@ class yolov3_slideWindows(yolov3_loadImages):
             _ = load_darknet_weights(model, self.opt.weights)
         # Fuse Conv2d + BatchNorm2d layers
         model.fuse()
-    
+
         # Eval mode
         model.to(self.device).eval()
-        
+
         return model
-    
+
     def process(self,frame,conf_thres=0.5,nms_thres=0.5):
+        img=torch.from_numpy(self.preprocess(frame)).unsqueeze(0).to(self.device)
+        pred, _ = self.model(img)
+        det = non_max_suppression(pred, conf_thres, nms_thres)[0]
+        batch_det=filter_label(det,self.classes,self.device)
+        draw_origin_img=frame.copy()
+        if batch_det is not None and len(batch_det)>0:
+            batch_det[:, :4] = scale_coords(img.shape[2:], batch_det[:, :4], frame.shape).round()
+            # Draw bounding boxes and labels of detections
+            for *xyxy, conf, cls_conf, cls in batch_det:
+                # Add bbox to the image
+                label = '%s %.2f' % (self.classes[int(cls)], conf)
+                plot_one_box(xyxy, draw_origin_img, label=label, color=self.colors[int(cls)])
+        return draw_origin_img,batch_det
+
+    def process_slide(self,frame,conf_thres=0.5,nms_thres=0.5):
+        frame=cv2.resize(frame, (0, 0), fx=0.5, fy=0.5, interpolation=cv2.INTER_LINEAR);
         split_imgs=split_image(frame,self.img_size)
         resize_imgs=[self.preprocess(img) for img in split_imgs]
         batch_imgs=torch.stack([torch.from_numpy(img) for img in resize_imgs]).to(self.device)
         batch_pred,_=self.model(batch_imgs)
         #batch_det is a detection result list for img in batch_imgs
         batch_det=non_max_suppression(batch_pred, conf_thres, nms_thres)
-        
+
         batch_det=[filter_label(det,self.classes,self.device) for det in batch_det]
         draw_origin_img=frame.copy()
         if batch_det is not None:
@@ -191,8 +207,66 @@ class yolov3_slideWindows(yolov3_loadImages):
                 # Add bbox to the image
                 label = '%s %.2f' % (self.classes[int(cls)], conf)
                 plot_one_box(xyxy, draw_origin_img, label=label, color=self.colors[int(cls)])
-    
-        return draw_origin_img
+        else:
+            merged_det=None
+
+        draw_origin_img=cv2.resize(draw_origin_img,(0, 0),fx=2.0,fy=2.0,interpolation=cv2.INTER_LINEAR)
+
+        return draw_origin_img,merged_det
+
+class MyVideoCapture():
+    def __init__(self,rtsp_url):
+        self.rtsp_url=rtsp_url
+        self.cap=cv2.VideoCapture(rtsp_url)
+
+    def read(self):
+        flag,frame=self.cap.read()
+        if flag:
+            return True,frame
+        else:
+            print('restart video capture')
+            self.cap.release()
+            self.cap=cv2.VideoCapture(self.rtsp_url)
+            assert self.cap.isOpened()
+            return self.read()
+
+    def release():
+        self.cap.release()
+
+def MyVideoWriter():
+    def __init__(self):
+        self.codec = cv2.VideoWriter_fourcc(*"mp4v")
+        #codec = cv2.VideoWriter_fourcc(*"h264")
+        self.fps = 30
+        self.writer=None
+        self.video_path=None
+
+    def get_writer(self,frame):
+        """
+        need release self.writer before write to new video
+        """
+        height,width=frame.shape[0:2]
+        # todo load config from config file
+        self.video_path=os.path.join('media',str(time.time())+".mp4")
+        self.writer = cv2.VideoWriter(self.video_path,
+                        self.codec, self.fps,
+                        (width, height))
+        self.frame=0
+
+    def write(self,image):
+        if self.writer is None:
+            self.get_writer()
+
+        if self.frame==30*60*10:
+            self.writer.release()
+            self.get_writer()
+
+        self.writer.write(image)
+        self.frame+=1
+
+        return self.video_path
+
+
 
 def rtsp2video(rtsp_url,video_path,save_minutes=10):
     reader=cv2.VideoCapture(rtsp_url)
@@ -200,49 +274,52 @@ def rtsp2video(rtsp_url,video_path,save_minutes=10):
     if not flag:
         print('cannot open',rtsp_url)
         return -1
-    
+
     codec = cv2.VideoWriter_fourcc(*"mp4v")
     #codec = cv2.VideoWriter_fourcc(*"h264")
     fps = reader.get(cv2.CAP_PROP_FPS)
     width = int(reader.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(reader.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    
+
     writer = cv2.VideoWriter(video_path, codec, fps, (width, height))
-    
+
     opt=edict()
     opt.cfg='app/config/yolov3.cfg'
     opt.data_cfg='app/config/coco.data'
     opt.weights='app/config/yolov3.weights'
     opt.img_size=416
     detector=yolov3_slideWindows(opt)
-    
+
     N=save_minutes*60*30
     for idx in range(N):
         flag,frame=reader.read()
         if flag:
-            detect_result=detector.process(frame)
-            writer.write(detect_result)
+            image,bbox=detector.process(frame)
+            writer.write(image)
             print(idx,'save image to ',video_path)
         else:
             print(idx,'read frame failed!!!',rtsp_url)
-        
+            reader=MyVideoCapture(rtsp_url)
+            frame=reader.read()
+
     reader.release()
     writer.release()
-    
+
 if __name__ == '__main__':
     parser=argparse.ArgumentParser()
     parser.add_argument('--rtsp',
                         help='rtsp url address',
+                        default='rtsp://admin:juancheng1@221.1.215.254:554',
                         )
-    
+
     parser.add_argument('--video',
                         help='saved video name',
                         default='save.mp4')
-    
+
     parser.add_argument('--save_minutes',
                         help='save video time',
                         type=int,
-                        default=10)
-    
+                        default=1)
+
     args=parser.parse_args()
     rtsp2video(args.rtsp,args.video,args.save_minutes)

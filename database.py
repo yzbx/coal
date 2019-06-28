@@ -2,40 +2,60 @@
 """
 need to define two database, one for local, one for remote
 """
-from sqlalchemy import Table, Column, Integer, String, MetaData, DateTime, BigInteger, SmallInteger
+from sqlalchemy import (Table,
+Column, Integer, String, MetaData,
+DateTime, BigInteger, SmallInteger,
+create_engine)
+
+import json
 
 metadata=MetaData()
-mtrp_alarm=Table('mtrp_alarm',metadata,
-                 Column('id',BigInteger(),primary_key=True),
-                 Column('isDel',Integer()),
-                 Column('alarmTime',DateTime),
-                 Column('confirmTime',DateTime),
-                 Column('event_id',Integer()),
-                 Column('content',String(255)),
-                 Column('createTime',DateTime),
-                 Column('device_id',BigInteger()),
-                 Column('channel_type',SmallInteger()),
-                 Column('channel_no',SmallInteger()),
-                 Column('feedback',String(255)),
-                 Column('feedbackTime',DateTime),
-                 Column('pic_name',String(255)),
-                 Column('pic_url',String(255)),
-                 Column('smsTime',DateTime),
-                 Column('status',Integer()),
-                 Column('valid',Integer()),
-                 Column('fileUrl',String(255)),
-                 Column('logID',Integer()),
-                 Column('alarmLevel_id',BigInteger()),
-                 Column('ip',String(255))
-                 )
+with open('config.json','r') as f:
+    config=json.load(f)
 
-mtrp_alarm_type=Table('mtrp_alarm',metadata,
-                      Column('id',Integer(),primary_key=True),
-                      Column('event_name',String(50)),
-                      Column('event_priority',SmallInteger()),
-                      Column('event_type',SmallInteger()),
-                      Column('event_sub_type1',SmallInteger()),
-                      Column('event_sub_type2',SmallInteger()),
-                      Column('event_level',SmallInteger()),
-                      Column('syntax',String(255)),
-                      )
+engine = create_engine('mysql+pymysql://{}:{}@{}:{}/{}'.format(config['user'],
+                       config['passwd'],
+                       config['host'],
+                       config['port'],
+                       config['database']),
+                       echo=True)
+
+mtrp_alarm=Table('mtrp_alarm',metadata,autoload=True,
+autoload_with=engine)
+
+# mtrp_alarm=Table('mtrp_alarm',metadata,
+                 # Column('id',BigInteger(),primary_key=True),
+                 # Column('isDel',Integer()),
+                 # Column('alarmTime',DateTime),
+                 # Column('confirmTime',DateTime),
+                 # Column('event_id',Integer()),
+                 # Column('content',String(255)),
+                 # Column('createTime',DateTime),
+                 # Column('device_id',BigInteger()),
+                 # Column('channel_type',SmallInteger()),
+                 # Column('channel_no',SmallInteger()),
+                 # Column('feedback',String(255)),
+                 # Column('feedbackTime',DateTime),
+                 # Column('pic_name',String(255)),
+                 # Column('pic_url',String(255)),
+                 # Column('smsTime',DateTime),
+                 # Column('status',Integer()),
+                 # Column('valid',Integer()),
+                 # Column('fileUrl',String(255)),
+                 # Column('logID',Integer()),
+                 # Column('alarmLevel_id',BigInteger()),
+                 # Column('ip',String(255))
+                 # )
+
+mtrp_alarm_type=Table('mtrp_alarm',metadata,autoload=True,
+autoload_with=engine)
+# mtrp_alarm_type=Table('mtrp_alarm',metadata,
+#                       Column('id',Integer(),primary_key=True),
+#                       Column('event_name',String(50)),
+#                       Column('event_priority',SmallInteger()),
+#                       Column('event_type',SmallInteger()),
+#                       Column('event_sub_type1',SmallInteger()),
+#                       Column('event_sub_type2',SmallInteger()),
+#                       Column('event_level',SmallInteger()),
+#                       Column('syntax',String(255)),
+#                       )

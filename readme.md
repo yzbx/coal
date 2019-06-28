@@ -43,3 +43,6 @@ engine = create_engine('sqlite:////absolute/path/to/foo.db')
 └── templates # html
 
 ```
+
+### video stream
+- https://github.com/miguelgrinberg/flask-video-streaming video streaming with Flask + gunicorn + gevent/eventlet
