@@ -1,11 +1,14 @@
 from flask import (Flask, render_template,
-stream_with_context, Response, request)
+stream_with_context, Response, request,
+make_response)
 import time
 import json
 import argparse
 import cv2
 from app.bg_process import car_detection
 flask_app = Flask(__name__)
+g_rtsp_url='rtsp://admin:juancheng1@221.1.215.254:554'
+g_car_detection=car_detection(g_rtsp_url)
 
 def generate_error(code,app_name,video_url,error_string='',succeed=0,pid=None):
     if pid is None:
@@ -51,8 +54,10 @@ def start_demo():
             return json.dumps(generate_error(1,'cannot obtain data {}'.format(key)))
         else:
             data[key]=value
-    p=car_detection(data['video_url'])
-    return Response(stream_with_context(gen_imencode(p.process())),
+
+    g_car_detection.update_video_url(data['video_url'])
+    print('update video url')
+    return Response(stream_with_context(gen_imencode(g_car_detection.process())),
                     mimetype='multipart/x-mixed-replace; boundary=frame')
 
 if __name__ == '__main__':

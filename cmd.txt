@@ -6,3 +6,25 @@ docker run --runtime=nvidia -it -v ~/iscas:/workspace youdaoyzbx/pytorch:1.1_qd 
 
 # install package
 - pip install -i https://pypi.tuna.tsinghua.edu.cn/simple some-package
+
+# cmd
+### ckq
+```
+docker run --runtime=nvidia -d -v ~/iscas:/workspace -p 8201:8201 youdaoyzbx/sy_keras:cuda10.0_car bash -c "source activate keras && cd ckq && export CUDA_VISIBLE_DEVICES=1 && python test.py -p 8201"
+```
+
+### sy
+```
+docker run --runtime=nvidia -d -v ~/iscas:/workspace -p 8202:8202 youdaoyzbx/sy_keras:helmet1 bash -c "source activate keras && cd /usr/sy && export CUDA_VISIBLE_DEVICES=0 && python keras_retinanet/bin/tasks.py -p 8202"
+```
+
+### wjx
+```
+docker run --runtime=nvidia -d -v ~/iscas:/workspace -p 8202:8202 youdaoyzbx/sy_keras:helmet1 bash -c "source activate keras && cd /usr/sy && export CUDA_VISIBLE_DEVICES=0 && python keras_retinanet/bin/tasks.py -p 8202"
+```
+
+# todo
+- preload model
+- multi process
+- wsgi deploy
+- g, after this response 

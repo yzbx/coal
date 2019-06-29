@@ -5,6 +5,7 @@ import cv2
 import argparse
 import sys
 import random
+import time
 sys.path.insert(0,'./model/yolov3')
 from model.yolov3.models import Darknet,load_darknet_weights
 from model.yolov3.utils.utils import load_classes, non_max_suppression, scale_coords, plot_one_box, bbox_iou
@@ -17,6 +18,7 @@ from easydict import EasyDict as edict
 import torch
 import numpy as np
 import requests
+import warnings
 
 def my_nms(pred,nms_thres=0.5):
     """
@@ -191,8 +193,20 @@ class yolov3_slideWindows(yolov3_loadImages):
         return draw_origin_img,batch_det
 
     def process_slide(self,frame,conf_thres=0.5,nms_thres=0.5):
-        frame=cv2.resize(frame, (0, 0), fx=0.5, fy=0.5, interpolation=cv2.INTER_LINEAR);
+        if min(frame.shape[0:2]) <= max(self.img_size):
+            warnings.warn("for small image, forbid slide window technology")
+            return self.process(frame,conf_thres,nms_thres)
+
+        if min(frame.shape[0:2])<=2*max(self.img_size):
+            resize_input=False
+        else:
+            resize_input=True
+
+        if resize_input:
+            frame=cv2.resize(frame, (0, 0), fx=0.5, fy=0.5, interpolation=cv2.INTER_LINEAR);
         split_imgs=split_image(frame,self.img_size)
+        # if len(split_imgs)==0:
+        #     return cv2.resize(frame,(0, 0),fx=2.0,fy=2.0,interpolation=cv2.INTER_LINEAR),None
         resize_imgs=[self.preprocess(img) for img in split_imgs]
         batch_imgs=torch.stack([torch.from_numpy(img) for img in resize_imgs]).to(self.device)
         batch_pred,_=self.model(batch_imgs)
@@ -215,7 +229,8 @@ class yolov3_slideWindows(yolov3_loadImages):
         else:
             merged_det=None
 
-        draw_origin_img=cv2.resize(draw_origin_img,(0, 0),fx=2.0,fy=2.0,interpolation=cv2.INTER_LINEAR)
+        if resize_input:
+            draw_origin_img=cv2.resize(draw_origin_img,(0, 0),fx=2.0,fy=2.0,interpolation=cv2.INTER_LINEAR)
         return draw_origin_img,det_dicts
 
 class MyVideoCapture():
@@ -223,6 +238,15 @@ class MyVideoCapture():
         self.rtsp_url=rtsp_url
         self.cap=cv2.VideoCapture(rtsp_url)
         self.max_retry_times=10
+        self.retry_times=0
+
+    def update_video_url(self,video_url):
+        self.rtsp_url=video_url
+        if self.cap is not None:
+            self.cap.release()
+
+
+        self.cap=cv2.VideoCapture(self.rtsp_url)
         self.retry_times=0
 
     def read(self):
@@ -235,23 +259,39 @@ class MyVideoCapture():
             self.cap=cv2.VideoCapture(self.rtsp_url)
             self.retry_times+=1
             if self.retry_times>self.max_retry_times:
-                assert False
-            assert self.cap.isOpened()
-            return self.read()
+                raise StopIteration('retry times > {}'.format(self.max_retry_times))
+
+            if not self.cap.isOpened():
+                raise StopIteration('cannot open {}'.format(self.rtsp_url))
+                return False,None
+            else:
+                return self.read()
 
     def process(self):
+        """
+        used for test image
+        """
+        time.sleep(0.02)
         flag,frame=self.cap.read()
+        time.sleep(0.03)
+        print(frame.shape)
         if flag:
-            yield frame
+            yield True,frame
         else:
             print('restart video capture')
             self.cap.release()
             self.cap=cv2.VideoCapture(self.rtsp_url)
             self.retry_times+=1
             if self.retry_times>self.max_retry_times:
-                assert False
-            assert self.cap.isOpened()
-            yield self.process()
+                raise StopIteration('cannot open {}'.format(self.rtsp_url))
+
+            if not self.cap.isOpened():
+                raise StopIteration('cannot open {}'.format(self.rtsp_url))
+            else:
+                #todo
+                for ret,img in self.process():
+                    yield ret,img
+                raise StopIteration('unknown')
 
     def release():
         self.cap.release()

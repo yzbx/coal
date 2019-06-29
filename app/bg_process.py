@@ -4,6 +4,7 @@ background process for multiprocessing
 import cv2
 import time
 import json
+import datetime
 from easydict import EasyDict as edict
 from sqlalchemy import Table,MetaData,create_engine
 from sqlalchemy.orm import sessionmaker
@@ -20,7 +21,7 @@ class mysql_orm():
                                config['host'],
                                config['port'],
                                config['database']),
-                               echo=True)
+                               echo=False)
 
         self.mtrp_alarm=Table('mtrp_alarm',metadata,autoload=True,
         autoload_with=engine)
@@ -55,7 +56,7 @@ class mysql_orm():
         if self.alarm is None:
             alarm=self.mtrp_alrm()
             #todo
-            alarm.alarmTime=int(time.time())
+            alarm.alarmTime=datatime.datatime.now()
             self.bbox_count={}
 
         for d in bbox:
@@ -78,10 +79,14 @@ class car_detection():
         self.reader=MyVideoCapture(video_url)
         self.writer=MyVideoWriter()
         self.detector=yolov3_slideWindows(opt)
-        self.mysql=mysql_orm()
+        # self.mysql=mysql_orm()
         self.time=time.time()
 
         self.status="running"
+
+    def update_video_url(self,video_url):
+        self.video_url=video_url
+        self.reader.update_video_url(video_url)
 
     def process(self):
         while True:
@@ -89,6 +94,9 @@ class car_detection():
             if flag:
                 image,bbox=self.detector.process_slide(frame)
                 yield image
+            else:
+                raise StopIteration('read frame failed!!!')
+                break
 
     def bg_process(self):
         while self.status=='running':
