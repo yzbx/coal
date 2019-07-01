@@ -4,6 +4,25 @@ import cv2
 import os
 from app.yolov3 import yolov3_detect
 from app.bg_process import car_detection
+
+def generate_error(code,app_name,video_url,error_string='',succeed=0,pid=None):
+    if pid is None:
+        return {'succeed':succeed,'app_name':app_name,'error_code':code,
+        'video_url':video_url,'error_string':error_string}
+    else:
+        return {'succeed':succeed,'app_name':app_name,'error_code':code,
+        'video_url':video_url,'error_string':error_string,'pid':pid}
+
+def get_data(request,name):
+    if request.method == 'POST':
+        value=request.form[name]
+    elif request.method == 'GET':
+        value=request.args.get(name)
+    else:
+        return False,None
+
+    return True,value
+
 def detection(data_json):
     data=json.loads(data_json)
     if data['task_name']=='car_detection':

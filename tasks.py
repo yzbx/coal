@@ -1,5 +1,5 @@
 from flask import Flask,Response,stream_with_context
-from web_utils import detection,video_player,app_player
+from web_utils import detection,video_player,app_player,generate_error,get_data
 from flask import request, jsonify, flash, send_from_directory
 from flask import render_template,redirect,url_for
 import subprocess
@@ -23,6 +23,14 @@ flask_app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 # record video_url, task_name and pid
 app_config=[]
 
+def get_app_id(data):
+    for cfg in app_config:
+        if data['video_url']==cfg['video_url'] and \
+            data['task_name']==cfg['task_name']:
+            return cfg['pid']
+
+    return -1
+
 @flask_app.route('/')
 def index():
     date=time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
@@ -34,68 +42,6 @@ def index():
                             video_url='rtsp://admin:juancheng1@221.1.215.254:554',
                             task_name='detection_car',
                             others='{"date":"%s"}'%date)
-
-@flask_app.route('/demo')
-def demo():
-    date=time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
-    return render_template('demo.html',
-                            title='demo',
-                            video_url='rtsp://admin:juancheng1@221.1.215.254:554',
-                            task_name='detection_car',
-                            others='{"date":"%s"}'%date)
-
-@flask_app.route('/database')
-def database():
-    import mysql.connector
-
-    with open('config.json','r') as f:
-        config=json.load(f)
-        f.close()
-    mydb = mysql.connector.connect(
-      host=config['host'],
-      user=config['user'],
-      passwd=config['passwd'],
-      port=config['port'],
-      database=config['database'],
-    )
-
-    mycursor = mydb.cursor()
-
-    mycursor.execute("SHOW TABLES")
-    print('table','*'*30)
-    tables=[]
-    for x in mycursor:
-      print(x)
-      tables.append(str(x))
-
-    mycursor.close()
-    return "tables: "+' '.join(tables)
-
-def generate_error(code,app_name,video_url,error_string='',succeed=0,pid=None):
-    if pid is None:
-        return {'succeed':succeed,'app_name':app_name,'error_code':code,
-        'video_url':video_url,'error_string':error_string}
-    else:
-        return {'succeed':succeed,'app_name':app_name,'error_code':code,
-        'video_url':video_url,'error_string':error_string,'pid':pid}
-
-def get_data(request,name):
-    if request.method == 'POST':
-        value=request.form[name]
-    elif request.method == 'GET':
-        value=request.args.get(name)
-    else:
-        return False,None
-
-    return True,value
-
-def get_app_id(data):
-    for cfg in app_config:
-        if data['video_url']==cfg['video_url'] and \
-            data['task_name']==cfg['task_name']:
-            return cfg['pid']
-
-    return -1
 
 @flask_app.route('/start_task', methods=['POST', 'GET'])
 def start_task():
@@ -172,6 +118,16 @@ def stop_task():
                                       succeed=1,
                                       pid=pid))
 
+
+@flask_app.route('/demo')
+def demo():
+    date=time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+    return render_template('demo.html',
+                            title='demo',
+                            video_url='rtsp://admin:juancheng1@221.1.215.254:554',
+                            task_name='detection_car',
+                            others='{"date":"%s"}'%date)
+
 @flask_app.route('/start_demo',methods=['POST','GET'])
 def start_demo():
     data={'video_url':None,'task_name':None,'others':None}
@@ -185,67 +141,6 @@ def start_demo():
     return Response(stream_with_context(gen_imencode(p.process())),
                     mimetype='multipart/x-mixed-replace; boundary=frame')
 
-@flask_app.route('/start_play',methods=['POST','GET'])
-def start_play():
-    data={'video_url':None,'task_name':None,'others':None}
-    for key in data.keys():
-        flag,value=get_data(request,key)
-        if not flag:
-            return json.dumps(generate_error(1,'cannot obtain data {}'.format(key)))
-        else:
-            data[key]=value
-    p=MyVideoCapture(data['video_url'])
-    return Response(stream_with_context(gen_imencode(p.process())),
-                    mimetype='multipart/x-mixed-replace; boundary=frame')
-
-def allowed_file(filename):
-    return '.' in filename and \
-           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-
-@flask_app.route('/upload',methods=['POST','GET'])
-def upload():
-    if request.method == 'POST':
-        # check if the post request has the file part
-        if 'file' not in request.files:
-            flash('No file part')
-            return redirect(request.url)
-        file = request.files['file']
-        # if user does not select file, browser also
-        # submit an empty part without filename
-        if file.filename == '':
-            flash('No selected file')
-            return redirect(request.url)
-        if file and allowed_file(file.filename):
-            filename = secure_filename(file.filename)
-            os.makedirs(flask_app.config['UPLOAD_FOLDER'],exist_ok=True)
-            file.save(os.path.join(flask_app.config['UPLOAD_FOLDER'], filename))
-            return redirect(url_for('uploaded_file',
-                                    filename=filename))
-    return ""
-
-@flask_app.route('/uploads/<filename>')
-def uploaded_file(filename):
-    return send_from_directory(flask_app.config['UPLOAD_FOLDER'],
-                               filename)
-
-@flask_app.route('/upload_to_server',methods=['POST','GET'])
-def upload_to_server():
-    if request.method == 'POST':
-        # check if the post request has the file part
-        if 'file' not in request.files:
-            flash('No file part')
-            return redirect(request.url)
-        file = request.files['file']
-        # if user does not select file, browser also
-        # submit an empty part without filename
-        if file.filename == '':
-            flash('No selected file')
-            return redirect(request.url)
-
-        url='http://10.50.200.171:8080/mtrp/file/json/upload.jhtml'
-        files = {'upload': file}
-        r = requests.post(url, files=files)
-        return r.content
 
 if __name__ == '__main__':
     parser=argparse.ArgumentParser()

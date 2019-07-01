@@ -2,6 +2,7 @@
 
 import unittest
 import json
+import time
 import os
 
 class TestMethods(unittest.TestCase):
@@ -10,7 +11,9 @@ class TestMethods(unittest.TestCase):
           'user':"iscas",
           'passwd':"sketch_123",
           'port':8306,
-          'database':'qingdao',}
+          'database':'qingdao',
+          'upload_url':'http://10.50.200.171:8080/mtrp/file/json/upload.jhtml',
+          }
 
         if not os.path.exists('config.json'):
             with open('config.json','r') as f:
@@ -75,7 +78,6 @@ class TestMethods(unittest.TestCase):
         import mysql.connector
         with open('config.json','r') as f:
             config=json.load(f)
-            f.close()
         mydb = mysql.connector.connect(
           host=config['host'],
           user=config['user'],
@@ -105,7 +107,9 @@ class TestMethods(unittest.TestCase):
 
     def test_upload(self):
         import requests
-        url='http://10.50.200.171:8080/mtrp/file/json/upload.jhtml'
+        with open('config.json','r') as f:
+            config=json.load(f)
+        url=config.upload_url
 
         with open('test.png','rb') as f:
             files = {'upload': f}
@@ -167,6 +171,28 @@ class TestMethods(unittest.TestCase):
         print(mydb)
         mydb.close()
         self.assertTrue(True)
+        
+    def test_multi_process(self):
+        from multiprocessing import Process
+        def fun(note):
+            for i in range(100):
+                time.sleep(1)
+                print("note: {}".format(note),i)
+        
+        
+        p1=Process(target=fun,args=('detection car',))
+        print('start p1')
+        p1.start()
+        p2=Process(target=fun,args=('detection helmet',))
+        print('start p2')
+        p2.start()
+        print('join p1')
+        p1.join()
+        print('join p2')
+        p2.join()
+        
+        self.assertTrue(True)
+        
 
 if __name__ == '__main__':
     unittest.main()
