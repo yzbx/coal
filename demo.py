@@ -38,6 +38,15 @@ def demo():
                             task_name='detection_car',
                             others=json.dumps(others))
 
+@flask_app.route('/helmet',methods=['POST','GET'])
+def helmet():
+    box=[[10,10,50,50,'helmet',0.9],[20,20,60,60,'none',0.8]]
+    data=[]
+    for x1,y1,x2,y2,cls,conf in box:
+        d={'x1':x1,'x2':x2,'y1':y1,'y2':y2,'cls':cls,'conf':conf}
+        data.append(d)
+    return json.dumps({'bbox':data})
+
 def gen_imencode(gen):
     for img in gen:
         ret, img = cv2.imencode('.jpg', img)
