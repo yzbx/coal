@@ -2,3 +2,6 @@
 *.weights
 model
 config.json
+*.jpg
+.ipynb*
+media

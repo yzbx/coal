@@ -11,7 +11,7 @@ import argparse
 import os
 import requests
 from app.bg_process import car_detection
-from app.utils import gen_imencode
+from app.app_utils import gen_imencode
 from werkzeug.utils import secure_filename
 from videowrite import MyVideoCapture
 

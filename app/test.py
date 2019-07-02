@@ -7,103 +7,22 @@ import os
 
 class TestMethods(unittest.TestCase):
     def test_json(self):
-        cfg={'host':"10.0.0.39",
-          'user':"iscas",
-          'passwd':"sketch_123",
-          'port':8306,
-          'database':'qingdao',
-          'upload_url':'http://10.50.200.171:8080/mtrp/file/json/upload.jhtml',
+        cfg={
+            'host':"10.0.0.39",
+            'user':"iscas",
+            'passwd':"sketch_123",
+            'port':8306,
+            'database':'qingdao',
+            'upload_url':'http://10.50.200.171:8080/mtrp/file/json/upload.jhtml',
+            "video_url":"rtsp://admin:juancheng1@221.1.215.254:554",
+            "task_name":"car_detection",
+            "others":{"a":1,"b":2},
           }
 
         if not os.path.exists('config.json'):
             with open('config.json','r') as f:
                 json.dump(cfg,f)
-                f.close()
         self.assertTrue(True)
-
-    def test_database(self):
-        import mysql.connector
-        with open('config.json','r') as f:
-            config=json.load(f)
-            f.close()
-
-        mydb = mysql.connector.connect(
-          host=config['host'],
-          user=config['user'],
-          passwd=config['passwd'],
-          port=config['port'],
-          database=config['database'],
-        )
-
-        mycursor = mydb.cursor()
-
-        mycursor.execute("SHOW DATABASES")
-
-        databases=[]
-        print('database','*'*30)
-        for x in mycursor:
-          print(x)
-          databases.append(x)
-
-        mycursor.close()
-        self.assertTrue(len(databases)>0)
-
-    def test_table(self):
-        import mysql.connector
-
-        with open('config.json','r') as f:
-            config=json.load(f)
-            f.close()
-        mydb = mysql.connector.connect(
-          host=config['host'],
-          user=config['user'],
-          passwd=config['passwd'],
-          port=config['port'],
-          database=config['database'],
-        )
-
-        mycursor = mydb.cursor()
-
-        mycursor.execute("SHOW TABLES")
-        print('table','*'*30)
-        tables=[]
-        for x in mycursor:
-          print(x)
-          tables.append(x)
-
-        mycursor.close()
-        self.assertTrue(len(tables)>0)
-
-    def test_columns(self):
-        import mysql.connector
-        with open('config.json','r') as f:
-            config=json.load(f)
-        mydb = mysql.connector.connect(
-          host=config['host'],
-          user=config['user'],
-          passwd=config['passwd'],
-          port=config['port'],
-          database=config['database'],
-        )
-
-        mycursor = mydb.cursor()
-
-        results=[]
-        mycursor.execute("show columns from mtrp_alarm")
-        print('mtrp_alarm','*'*30)
-
-        for x in mycursor:
-          print(x)
-          results.append(x)
-
-        mycursor.execute("show columns from mtrp_alarm_type")
-        print('mtrp_alarm_type','*'*30)
-        for x in mycursor:
-          print(x)
-          results.append(x)
-
-        mycursor.close()
-        self.assertTrue(len(results)>0)
 
     def test_upload(self):
         import requests
@@ -175,7 +94,7 @@ class TestMethods(unittest.TestCase):
     def test_multi_process(self):
         from multiprocessing import Process
         def fun(note):
-            for i in range(100):
+            for i in range(10):
                 time.sleep(1)
                 print("note: {}".format(note),i)
         
@@ -192,7 +111,6 @@ class TestMethods(unittest.TestCase):
         p2.join()
         
         self.assertTrue(True)
-        
 
 if __name__ == '__main__':
     unittest.main()
