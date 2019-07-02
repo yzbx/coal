@@ -2,9 +2,13 @@ import os
 import cv2
 import json
 import time
+import datetime
 from easydict import EasyDict as edict
 import requests
-from multiprocessing import Process, Manager
+from multiprocessing import Process, Queue
+from sqlalchemy.ext.automap import automap_base
+from sqlalchemy import Table,MetaData,create_engine,func
+from sqlalchemy.orm import sessionmaker,Session
 import sys
 if '.' not in sys.path:
     sys.path.insert(0,'.')
@@ -88,11 +92,10 @@ class QD_Writer():
             return False
     
     def upload_in_subprocess(self):
-        with Manager() as manager:
-            self.manage_dict=manager.dict()
-            self.sub_process=Process(target=save_and_upload,args=(self.image_names,self.save_video_name,self.manage_dict))
-            self.sub_process.start()
-            
+        self.manage_dict=Queue()
+        self.sub_process=Process(target=save_and_upload,args=(self.image_names,self.save_video_name,self.manage_dict))
+        self.sub_process.start()
+#         self.sub_process.join() 
         
 class QD_Detector(QD_Basic):
     def __init__(self,cfg):
@@ -109,7 +112,7 @@ class QD_Detector(QD_Basic):
         return image,bbox
 
 
-class QD_Alerter():
+class QD_Alerter(QD_Basic):
     """
     save image to disk and record the filename
     """
@@ -118,7 +121,7 @@ class QD_Alerter():
         self.writers=[]
         self.save_frame_number=save_frame_number
         self.max_filesize=self.save_frame_number*2
-    
+        
     def bbox2rule(self,bbox):
         """
         bbox: [{'bbox':list(xyxy),'conf':conf,'label':self.classes[int(cls)]}]
@@ -143,6 +146,8 @@ class QD_Alerter():
         self.filenames.append(filename)
         
         if len(self.filenames)>self.max_filesize:
+            for f in self.filenames[:-self.save_frame_number]:
+                os.remove(f)
             self.filenames=self.filenames[-self.save_frame_number:]
         
         for idx,writer in enumerate(self.writers):
@@ -153,8 +158,9 @@ class QD_Alerter():
                     print('{} is running'.format(writer.sub_process.pid))
                 else:
                     writer.sub_process.join()
+                    os.remove(writer.save_video_name)
                     self.writers[idx]=None
-                    print('fileUrl is {fileUrl}'.format(fileUrl=writer.manage_dict['fileUrl']))
+                    print('fileUrl is {fileUrl}'.format(fileUrl=writer.manage_dict.get()))
             else:
                 writer.write_sync(filename)
         
@@ -195,7 +201,7 @@ class QD_Upload():
     def __init__(self):
         with open('config.json','r') as f:
             config=json.load(f)
-        self.upload_url=config.upload_url
+        self.upload_url=config['upload_url']
         
     def upload(self,filename):
         """
@@ -219,28 +225,79 @@ class QD_Upload():
                 return ''
             
         return ''
+
+class QD_Database(QD_Basic):
+    def __init__(self,cfg):
+        super().__init__(cfg)
+        Base = automap_base()
+        self.engine = create_engine('mysql+pymysql://{user}:{passwd}@{host}:{port}/{database}'.format(
+            user=self.cfg.user,
+            passwd=self.cfg.passwd,
+            host=self.cfg.host,
+            port=self.cfg.port,
+            database=self.cfg.database),echo=False,encoding="utf-8")
+        
+        Base.prepare(self.engine,reflect=True)
+        self.Mtrp_Alarm=Base.classes.mtrp_alarm
+        self.Mtrp_Alarm_Type=Base.classes.mtrp_alarm_type
+        self.session=Session(self.engine)
     
+    def __exit__(self):
+        self.session.close()
+        
+    def insert(self,content):
+        alarm=self.Mtrp_Alarm()
+        alarm.alarmTime=datetime.datetime.now()
+        alarm.content=content
+        alarm.fileUrl=''
+        
+        alarm.createTime=datetime.datetime.now()
+        
+        max_id = self.session.query(func.max(self.Mtrp_Alarm.id)).scalar()
+        if max_id is None:
+            max_id=0
+        alarm.id=max_id+1
+        self.session.add(alarm)
+        self.session.commit()
+        return alarm.id
+    
+    def update(self,id,fileUrl):
+        alarm=self.Mtrp_Alarm()
+        self.session.query(self.Mtrp_Alarm).filter_by(id=id).update({'fileUrl':fileUrl})
+        self.session.commit()
+        
+    def query(self,id):
+        q=self.session.query(self.Mtrp_Alarm)
+        result=q.filter(self.Mtrp_Alarm.id==id).one()
+        return result
+        
 def save_and_upload(image_names,save_video_name,manager_dict):
-	"""
-	save the image in video and upload it
-	"""
-	codec = cv2.VideoWriter_fourcc(*"mp4v")
-	writer = None
-	
-	for f in images_names:
-		img=cv2.imread(f)
-		if writer is None:
+    """
+    save the image in video and upload it
+    """
+    codec = cv2.VideoWriter_fourcc(*"mp4v")
+    fps=30
+    writer = None
+    
+    for f in image_names:
+        img=cv2.imread(f)
+        if writer is None:
             height,width=img.shape[0:2]
-			writer=cv2.VideoWriter(save_video_name,
-							codec, fps,
-							(width, height))
-		
-		writer.write(img)
-		
-	writer.release()
-	
-	loader=QD_Upload()
-	manager_dict['fileUrl']=loader.upload(save_video_name)
+            writer=cv2.VideoWriter(save_video_name,
+                            codec, fps,
+                            (width, height))
+        
+        writer.write(img)
+        
+    writer.release()
+    
+    if not os.path.exists(save_video_name):
+        raise Exception('cannot save images to {video}'.format(video=save_video_name))
+        manager_dict.put('')
+    else:
+        loader=QD_Upload()
+        fileUrl=loader.upload(save_video_name)
+        manager_dict.put(fileUrl)
     
 if __name__ == '__main__':
     with open('config.json','r') as f:

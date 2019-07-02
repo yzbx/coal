@@ -54,9 +54,9 @@ class mysql_orm():
 
         # count for bbox
         if self.alarm is None:
-            alarm=self.mtrp_alrm()
+            self.alarm=self.mtrp_alrm()
             #todo
-            alarm.alarmTime=datatime.datatime.now()
+            self.alarm.alarmTime=datatime.datatime.now()
             self.bbox_count={}
 
         for d in bbox:
