@@ -31,7 +31,7 @@ class QD_Reader():
     def __init__(self,video_url):
         self.video_url=video_url
         self.max_retry_times=10
-        self.current_retry_times=0
+        self.retry_times=0
         self.cap=None
         
     def read(self):
