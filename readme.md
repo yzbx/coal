@@ -1,6 +1,10 @@
 # install
 - nvidia-driver
-- nvidia-docker
+- [docker](https://docs.docker.com/install/linux/docker-ce/ubuntu/)
+- [nvidia-docker](https://github.com/NVIDIA/nvidia-docker)
+```
+sudo usermod -aG docker your-user
+```
 - pull docker image
 
 ## install yolov3
@@ -9,13 +13,19 @@
 
 # scripts
 ```
-docker pull youdaoyzbx/pytorch:1.1
+docker pull youdaoyzbx/pytorch:qd_light
 git clone https://git.dev.tencent.com/yzbx/qd.git
 curl http://10.50.200.171:8080/mtrp/file/json/upload.jhtml -F "file=@/workspace/test.jpg"
 ```
 
 ### vpn and ssh
 view padlist for detail
+
+### miniconda
+```
+wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+bash Miniconda3-latest-Linux-x86_64.sh
+```
 
 ### demand
 - save video and image
