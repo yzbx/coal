@@ -5,6 +5,6 @@ After=network.target
 [Service]
 Type=simple
 User=dell
-WorkingDirectory=/home/dell
-Environment="PORT=8015"
-ExecStart=/usr/bin/docker run --runtime nvidia -d -v ~/iscas:/workspace -p ${PORT}:${PORT} youdaoyzbx/pytorch bash -c "cd /workspace/qd && python tasks.py -p ${PORT}"
+WorkingDirectory=/home/dell/iscas/qd
+Environment="PORT=8205"
+ExecStart=/bin/bash /home/dell/iscas/qd/qd_service.sh
