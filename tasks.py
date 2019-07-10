@@ -1,5 +1,7 @@
+#!/usr/bin/env python
+
 from flask import Flask,Response,stream_with_context
-from web_utils import detection,video_player,app_player,generate_error,get_data
+from web_utils import detection,video_player,app_player,generate_response,get_data
 from flask import request, jsonify, flash, send_from_directory
 from flask import render_template,redirect,url_for
 import subprocess
@@ -10,10 +12,13 @@ import json
 import argparse
 import os
 import requests
+import os
+import sys
 from app.bg_process import car_detection
 from app.app_utils import gen_imencode
 from werkzeug.utils import secure_filename
 from videowrite import MyVideoCapture
+from app.framework import QD_Process
 
 UPLOAD_FOLDER = 'media'
 ALLOWED_EXTENSIONS = set(['txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif'])
@@ -49,7 +54,7 @@ def start_task():
     for key in data.keys():
         flag,value=get_data(request,key)
         if not flag:
-            return json.dumps(generate_error(1,
+            return json.dumps(generate_response(1,
                                              app_name='start_task',
                                              video_url=data['video_url'],
                                              error_string='cannot obtain data {}'.format(key)))
@@ -61,7 +66,7 @@ def start_task():
     data['pid']=proc.pid
     assert data['pid']>0
     app_config.append(data)
-    return json.dumps(generate_error(0,succeed=1,pid=proc.pid,
+    return json.dumps(generate_response(0,succeed=1,pid=proc.pid,
                                      app_name='start_task',
                                      video_url=data['video_url']))
 
@@ -70,7 +75,7 @@ def task_result(pid):
     try:
         p = psutil.Process(int(pid))
     except Exception as e:
-        return json.dumps(generate_error(3,
+        return json.dumps(generate_response(3,
                                          video_url='',
                                          app_name='task_result',
                                          succeed=1,pid=pid,
@@ -91,7 +96,7 @@ def stop_task():
     for key in data.keys():
         flag,value=get_data(request,key)
         if not flag:
-            return json.dumps(generate_error(1,
+            return json.dumps(generate_response(1,
                                              video_url=data['video_url'],
                                              app_name='stop_task',
                                              error_string='cannot obtain data {}'.format(key)))
@@ -100,7 +105,7 @@ def stop_task():
 
     pid=get_app_id(data)
     if pid==-1:
-        return json.dumps(generate_error(2,video_url=data['video_url'],
+        return json.dumps(generate_response(2,video_url=data['video_url'],
                                          app_name='stop_task',
                                          error_string='no process running for {}/{}'.format(data['video_url'],data['task_name'])))
 
@@ -108,11 +113,11 @@ def stop_task():
         p = psutil.Process(pid)
         p.terminal()
     except Exception as e:
-        return json.dumps(generate_error(3,
+        return json.dumps(generate_response(3,
                                          video_url=data['video_url'],
                                          app_name='stop_task',
                                          succeed=1,pid=pid,error_string=e.__str__()))
-    return  json.dumps(generate_error(0,
+    return  json.dumps(generate_response(0,
                                       video_url=data['video_url'],
                                       app_name='stop_task',
                                       succeed=1,
@@ -134,13 +139,26 @@ def start_demo():
     for key in data.keys():
         flag,value=get_data(request,key)
         if not flag:
-            return json.dumps(generate_error(1,'cannot obtain data {}'.format(key)))
+            return json.dumps(generate_response(1,
+                                             app_name='start_demo',
+                                             video_url=data['video_url'],
+                                             error_string='cannot obtain data {}'.format(key)))
         else:
             data[key]=value
-    p=car_detection(data['video_url'])
-    return Response(stream_with_context(gen_imencode(p.process())),
+    try:
+        with open('config.json','r') as f:
+            config=json.load(f)
+        config['video_url']=data['video_url']
+        p=QD_Process(config)
+    except RuntimeError as e:
+        os.execv(__file__, sys.argv)
+        return json.dumps(generate_response(2,
+                                  app_name='start_demo',
+                                  video_url=data['video_url'],
+                                  error_string=e.__str__()))
+    else:
+        return Response(stream_with_context(gen_imencode(p.demo())),
                     mimetype='multipart/x-mixed-replace; boundary=frame')
-
 
 if __name__ == '__main__':
     parser=argparse.ArgumentParser()

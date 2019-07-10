@@ -14,6 +14,9 @@ git clone https://git.dev.tencent.com/yzbx/qd.git
 curl http://10.50.200.171:8080/mtrp/file/json/upload.jhtml -F "file=@/workspace/test.jpg"
 ```
 
+### systemd service
+- sudo cp qd.service /lib/systemd/system/qd.service
+
 ### vpn and ssh
 view padlist for detail
 

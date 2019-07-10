@@ -5,7 +5,7 @@ import os
 from app.yolov3 import yolov3_detect
 from app.bg_process import car_detection
 
-def generate_error(code,app_name,video_url,error_string='',succeed=0,pid=None):
+def generate_response(code,app_name,video_url,error_string='',succeed=0,pid=None):
     if pid is None:
         return {'succeed':succeed,'app_name':app_name,'error_code':code,
         'video_url':video_url,'error_string':error_string}
