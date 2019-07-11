@@ -14,7 +14,6 @@ import os
 import requests
 import os
 import sys
-from app.bg_process import car_detection
 from app.app_utils import gen_imencode
 from werkzeug.utils import secure_filename
 from videowrite import MyVideoCapture
@@ -124,7 +123,7 @@ def task_result(pid):
 
 @flask_app.route('/stop_task',methods=['POST','GET'])
 def stop_task():
-    data={'video_url':None,'task_name':None,'others':None}
+    data={'video_url':None,'task_name':None}
     for key in data.keys():
         flag,value=get_data(request,key)
         if not flag:

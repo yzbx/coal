@@ -3,7 +3,7 @@ import json
 import cv2
 import os
 from app.yolov3 import yolov3_detect
-from app.bg_process import car_detection
+from app.framework import QD_Process
 
 def generate_response(code,app_name,video_url,error_string='',succeed=0,pid=None):
     if pid is None:
@@ -26,14 +26,20 @@ def get_data(request,name):
 def detection(data_json):
     data=json.loads(data_json)
     if data['task_name']=='car_detection':
-        p=car_detection(data['video_url'])
-        p.bg_process()
+        with open('config.json','r') as f:
+            config=json.load(f)
+
+        config['video_url']=data['video_url']
+        try:
+            p=QD_Process(config)
+            p.process()
+        except Exception as e:
+            raise Exception('cannot start task because {}'.format(e.__str__()))
     else:
-        for i in range(100):
-            print(i,data)
-            time.sleep(1)
+        raise Exception('no such task name')
 
     return 0
+
 class video_buffer():
     def __init__(self,buffer_size=1200):
         self.buffer_size=buffer_size

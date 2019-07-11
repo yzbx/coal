@@ -6,10 +6,7 @@ import argparse
 import sys
 import random
 import time
-# sys.path.insert(0,'./model/yolov3')
-#sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../model/yolov3')))
-
-print(sys.path)
+sys.path.insert(0,'./model/yolov3')
 from model.yolov3.models import Darknet,load_darknet_weights
 from model.yolov3.utils.utils import load_classes, non_max_suppression, scale_coords, plot_one_box, bbox_iou
 from model.yolov3.utils.parse_config import parse_data_cfg

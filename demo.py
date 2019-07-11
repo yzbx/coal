@@ -5,10 +5,11 @@ import time
 import json
 import argparse
 import cv2
-from app.bg_process import car_detection
+from app.framework import QD_Process
 flask_app = Flask(__name__)
-g_rtsp_url='rtsp://admin:juancheng1@221.1.215.254:554'
-g_car_detection=car_detection(g_rtsp_url)
+with open('config.json','r') as f:
+    config=json.load(f)
+g_car_detection=QD_Process(config)
 
 def generate_error(code,app_name,video_url,error_string='',succeed=0,pid=None):
     if pid is None:
