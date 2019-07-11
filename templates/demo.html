@@ -1,5 +1,11 @@
 <title>{{title}}</title>
 
+<form action="/restart" method="get">
+show image<br>
+restart: <input type="text" value="True" name="flag" />
+<input type="submit" value="Submit" />
+</form>
+
 <form action="/start_demo" method="get">
 show image<br>
 video_url: <input type="text" value={{video_url}} name="video_url" />

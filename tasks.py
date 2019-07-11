@@ -48,6 +48,38 @@ def index():
                             task_name='detection_car',
                             others='{"date":"%s"}'%date)
 
+@flask_app.route('/error',methods=['POST','GET'])
+def error():
+    data={'video_url':None,'task_name':None,'others':None}
+    for key in data.keys():
+        flag,value=get_data(request,key)
+        if not flag:
+            return json.dumps(generate_response(1,
+                                             app_name='start_demo',
+                                             video_url=data['video_url'],
+                                             error_string='cannot obtain data {}'.format(key)))
+        else:
+            data[key]=value
+    
+#    os.execv(__file__, sys.argv)
+    error_string="pid={pid} \n out of gpu memory".format(pid=os.getpid())
+    return json.dumps(generate_response(2,
+                                  app_name='start_demo',
+                                  video_url=data['video_url'],
+                                  error_string=error_string))
+
+@flask_app.route('/restart',methods=['POST','GET'])
+def restart():
+    data={'flag':'False'}
+    for key in data.keys():
+        flag,value=get_data(request,key)
+        if flag:
+            data[key]=value
+    if data['flag']=='True':
+        os.execv(__file__,sys.argv)
+    else:
+        return "hello world"
+
 @flask_app.route('/start_task', methods=['POST', 'GET'])
 def start_task():
     data={'video_url':None,'task_name':None,'others':None}
@@ -151,11 +183,11 @@ def start_demo():
         config['video_url']=data['video_url']
         p=QD_Process(config)
     except RuntimeError as e:
-        os.execv(__file__, sys.argv)
-        return json.dumps(generate_response(2,
-                                  app_name='start_demo',
-                                  video_url=data['video_url'],
-                                  error_string=e.__str__()))
+#        return json.dumps(generate_response(2,
+#                                  app_name='start_demo',
+#                                  video_url=data['video_url'],
+#                                  error_string=e.__str__()))
+        return redirect(url_for('error'),code=307)
     else:
         return Response(stream_with_context(gen_imencode(p.demo())),
                     mimetype='multipart/x-mixed-replace; boundary=frame')
