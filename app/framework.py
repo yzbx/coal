@@ -35,7 +35,16 @@ class QD_Reader():
         self.retry_times=0
         self.cap=None
         
+        # queue for frame
+        self.queue=None
+        self.sub_process=None
+        
     def read(self):
+        """
+        return flag and frame with VideoCapture restart
+        flag=True when obtain valid frame (restart if neccessary)
+        otherwise return flag=False (give up restart and exit programe)
+        """
         if self.cap is None:
             self.cap=cv2.VideoCapture(self.video_url)
         
@@ -59,10 +68,51 @@ class QD_Reader():
                 return self.read()
             
     def update_video_url(self,video_url):
+        assert self.sub_process is None
         if self.cap is not None:
             self.cap.release()
         self.video_url=video_url
         self.cap=cv2.VideoCapture(self.video_url)
+        
+    def read_from_queue(self):
+        """
+        skip old frames, always use the newest frame with subprocess
+        """
+        def write_to_queue(reader,q):
+            while True:
+                flag,frame=reader.read()
+                time.sleep(0.01)
+                if flag:
+                    if q.qsize()<3:
+                        q.put(frame)
+                    else:
+                        # two process get will cause error(get empty queue with q.get_nowait())
+                        # or dead lock(get empty queue with q.get() with if q.qsize() is empty() )
+                        q.get()
+                        q.put(frame)
+                else:
+                    q.put(None)
+                    break
+        
+        if self.queue is None:
+            self.queue=Queue()
+            self.sub_process=Process(target=write_to_queue,args=(self,self.queue))
+            self.sub_process.start()
+        
+        while self.queue.qsize()>=3:
+            frame=self.queue.get()
+        else:
+            # if queue is empty, it will wait here
+            frame=self.queue.get()
+         
+        if frame is None:
+            return False,frame
+        else:
+            return True,frame
+        
+    def join(self):
+        if self.sub_process is not None:
+            self.sub_process.join()
         
 class QD_Writer():
     """
@@ -78,7 +128,7 @@ class QD_Writer():
         valid_num=self.save_frame_number//2
         self.image_names=filenames[-valid_num:]
         self.sub_process=None
-        self.manage_dict=None
+        self.queue=None
     
     def write_sync(self,filename):
         if not self.can_upload():
@@ -93,14 +143,24 @@ class QD_Writer():
             return False
     
     def upload_in_subprocess(self):
-        self.manage_dict=Queue()
-        self.sub_process=Process(target=save_and_upload,args=(self.image_names,self.save_video_name,self.manage_dict))
+        self.queue=Queue()
+        self.sub_process=Process(target=save_and_upload,args=(self.image_names,self.save_video_name,self.queue))
         self.sub_process.start()
 #         self.sub_process.join() 
         
 class QD_Detector(QD_Basic):
     def __init__(self,cfg):
         super().__init__(cfg)
+        if hasattr(cfg,'task_name'):
+            self.task_name=cfg.task_name
+        else:
+            self.task_name='car_detection'
+        
+        if hasattr(cfg,'others'):
+            self.others=cfg.others
+        else:
+            self.others=''
+        
         opt=edict()
         opt.cfg='app/config/yolov3.cfg'
         opt.data_cfg='app/config/coco.data'
@@ -147,6 +207,7 @@ class QD_Alerter(QD_Basic):
         self.filenames.append(filename)
         
         if len(self.filenames)>self.max_filesize:
+            # remove old image on disk
             for f in self.filenames[:-self.save_frame_number]:
                 os.remove(f)
             self.filenames=self.filenames[-self.save_frame_number:]
@@ -158,10 +219,11 @@ class QD_Alerter(QD_Basic):
                 elif writer.sub_process.is_alive():
                     print('{} is running'.format(writer.sub_process.pid))
                 else:
+                    # a sub process can join many times
                     writer.sub_process.join()
                     os.remove(writer.save_video_name)
                     self.writers[idx]=None
-                    print('fileUrl is {fileUrl}'.format(fileUrl=writer.manage_dict.get()))
+                    print('fileUrl is {fileUrl}'.format(fileUrl=writer.queue.get()))
             else:
                 writer.write_sync(filename)
         
@@ -180,7 +242,8 @@ class QD_Process(QD_Basic):
         
     def process(self):
         while True:
-            flag,frame=self.reader.read()
+            # flag,frame=self.reader.read()
+            flag,frame=self.reader.read_from_queue()
             if flag:
                 image,bbox=self.detector.process(frame)
                 self.alerter.process(image,bbox)
@@ -190,7 +253,8 @@ class QD_Process(QD_Basic):
     
     def demo(self):
         while True:
-            flag,frame=self.reader.read()
+            # flag,frame=self.reader.read()
+            flag,frame=self.reader.read_from_queue()
             if flag:
                 image,bbox=self.detector.process(frame)
                 yield image

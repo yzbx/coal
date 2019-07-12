@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 from flask import Flask,Response,stream_with_context
-from web_utils import detection,video_player,app_player,generate_response,get_data
+from web_utils import detection,generate_response,get_data,kill_all_subprocess
 from flask import request, jsonify, flash, send_from_directory
 from flask import render_template,redirect,url_for
 import subprocess
@@ -18,12 +18,9 @@ from app.app_utils import gen_imencode
 from werkzeug.utils import secure_filename
 from videowrite import MyVideoCapture
 from app.framework import QD_Process
-
-UPLOAD_FOLDER = 'media'
-ALLOWED_EXTENSIONS = set(['txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif'])
-
+import torch
 flask_app = Flask(__name__)
-flask_app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
 # record video_url, task_name and pid
 app_config=[]
 
@@ -37,6 +34,7 @@ def get_app_id(data):
 
 @flask_app.route('/')
 def index():
+    torch.cuda.empty_cache()
     date=time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
     return render_template('index.html',
                             title='index',
@@ -46,6 +44,16 @@ def index():
                             video_url='rtsp://admin:juancheng1@221.1.215.254:554',
                             task_name='detection_car',
                             others='{"date":"%s"}'%date)
+    
+@flask_app.route('/kill')
+def kill_subprocess():
+    kill_all_subprocess()
+    return "kill all sub process"
+
+@flask_app.route('/clear')
+def clear():
+    torch.cuda.empty_cache()
+    return "clear cuda cache"
 
 @flask_app.route('/error',methods=['POST','GET'])
 def error():
@@ -180,13 +188,15 @@ def start_demo():
         with open('config.json','r') as f:
             config=json.load(f)
         config['video_url']=data['video_url']
+        config['task_name']=data['task_name']
+        config['others']=data['others']
         p=QD_Process(config)
     except RuntimeError as e:
-#        return json.dumps(generate_response(2,
-#                                  app_name='start_demo',
-#                                  video_url=data['video_url'],
-#                                  error_string=e.__str__()))
-        return redirect(url_for('error'),code=307)
+        return json.dumps(generate_response(2,
+                                  app_name='start_demo',
+                                  video_url=data['video_url'],
+                                  error_string=e.__str__()))
+#        return redirect(url_for('error'),code=307)
     else:
         return Response(stream_with_context(gen_imencode(p.demo())),
                     mimetype='multipart/x-mixed-replace; boundary=frame')

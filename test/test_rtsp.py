@@ -1,4 +1,3 @@
-import cv2
 import json
 import time
 from app.framework import QD_Reader
@@ -76,8 +75,31 @@ def test_rtsp_queue(worker):
         
     p.join()
     
+def test_read_from_queue():
+    with open('config.json','r') as f:
+        config=json.load(f)
+    video_url=config['video_url']
+    reader=QD_Reader(video_url)
+    
+    plt.ion()
+    plt.show()
+    idx=0
+    while True:
+        time.sleep(1)
+        idx=idx+1
+        flag,frame=reader.read_from_queue()
+        if frame is not None:
+            plt.imshow(frame)
+            plt.pause(0.001)
+        else:
+            break
+        
+    reader.join()
+    
 if __name__ == '__main__':
 #     print('test rtsp')
 #     test_rtsp()
     print('test rtsp queue')
-    test_rtsp_queue(worker_newest)
+#    test_rtsp_queue(worker_all)
+#    test_rtsp_queue(worker_newest)
+    test_read_from_queue()
