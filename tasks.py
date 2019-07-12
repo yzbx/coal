@@ -18,7 +18,7 @@ from app.app_utils import gen_imencode
 from werkzeug.utils import secure_filename
 from videowrite import MyVideoCapture
 from app.framework import QD_Process
-import torch
+import queue
 flask_app = Flask(__name__)
 
 # record video_url, task_name and pid
@@ -34,7 +34,6 @@ def get_app_id(data):
 
 @flask_app.route('/')
 def index():
-    torch.cuda.empty_cache()
     date=time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
     return render_template('index.html',
                             title='index',
@@ -49,11 +48,6 @@ def index():
 def kill_subprocess():
     kill_all_subprocess()
     return "kill all sub process"
-
-@flask_app.route('/clear')
-def clear():
-    torch.cuda.empty_cache()
-    return "clear cuda cache"
 
 @flask_app.route('/error',methods=['POST','GET'])
 def error():
@@ -77,13 +71,17 @@ def error():
 
 @flask_app.route('/restart',methods=['POST','GET'])
 def restart():
+    """
+    just restart demo, kill demo pid
+    """
     data={'flag':'False'}
     for key in data.keys():
         flag,value=get_data(request,key)
         if flag:
             data[key]=value
     if data['flag']=='True':
-        os.execv(__file__,sys.argv)
+        kill_all_subprocess()
+        return "restart okay"
     else:
         return "hello world"
 

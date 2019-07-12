@@ -43,7 +43,11 @@ def detection(data_json):
 
     return 0
 
-def kill_all_subprocess():
+def kill_all_subprocess(pids=None):
+    """
+    if pids==None: kill all child process pids
+    else:kill pids
+    """
 #    current_process = psutil.Process()
 #    children = current_process.children(recursive=True)
 #    for child in children:
@@ -52,8 +56,12 @@ def kill_all_subprocess():
         print("process {} terminated with exit code {}".format(proc, proc.returncode))
     
     procs = psutil.Process().children()
-    for p in procs:
-        p.terminate()
-    gone, alive = psutil.wait_procs(procs, timeout=3, callback=on_terminate)
-    for p in alive:
-        p.kill()
+    if pids is not None:
+        procs = [p for p in procs if p.pid in pids]
+        
+    if len(procs)>0:
+        for p in procs:
+            p.terminate()
+        gone, alive = psutil.wait_procs(procs, timeout=3, callback=on_terminate)
+        for p in alive:
+            p.kill()
