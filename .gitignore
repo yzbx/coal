@@ -6,3 +6,6 @@ config.json
 .ipynb*
 media
 *.pyc
+yzbx
+weights
+*.zip

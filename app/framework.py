@@ -14,7 +14,7 @@ import sys
 if '.' not in sys.path:
     sys.path.insert(0,'.')
 sys.path.insert(0,'./model/yolov3')
-from videowrite import yolov3_slideWindows
+from app.algorithm import yolov3_slideWindows
 
 
 class QD_Basic():
@@ -151,22 +151,44 @@ class QD_Writer():
 class QD_Detector(QD_Basic):
     def __init__(self,cfg):
         super().__init__(cfg)
-        if hasattr(cfg,'task_name'):
-            self.task_name=cfg.task_name
-        else:
-            self.task_name='car_detection'
         
         if hasattr(cfg,'others'):
             self.others=cfg.others
         else:
             self.others=''
         
-        opt=edict()
-        opt.cfg='app/config/yolov3.cfg'
-        opt.data_cfg='app/config/coco.data'
-        opt.weights='app/config/yolov3.weights'
-        opt.img_size=416
+        opt=self.get_opt()
         self.detector=yolov3_slideWindows(opt)
+        
+    def get_opt(self):
+        if hasattr(self.cfg,'task_name'):
+            task_name=self.cfg.task_name
+        else:
+            task_name='car_detection'
+        
+        opt=edict()
+        if task_name=='car_detection':
+            opt.cfg='app/config/yolov3.cfg'
+            opt.data_cfg='app/config/coco.data'
+            opt.weights='app/config/yolov3.weights'
+            opt.img_size=416
+            return opt
+        elif task_name=='excavator_detection':
+            warnings.warn('running excavator detection')
+            model_name='digger_cls1_0708'
+        elif task_name=='truck_detection':
+            warnings.warn('running truck detection')
+            model_name='digger_cls3_0712'
+        else:
+            warnings.warn('unknown task name {}'.format(task_name))
+            raise Exception('unknwn task name {}'.format(task_name))
+        
+        opt.cfg=os.path.join('yzbx',model_name+'.cfg')
+        opt.data_cfg=os.path.join('yzbx',model_name+'.data')
+        opt.weights=os.path.join('weights',model_name+'.pt')
+        opt.img_size=416
+        
+        return opt
         
     def process(self,frame):
         image,bbox=self.detector.process_slide(frame)

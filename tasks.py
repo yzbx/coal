@@ -15,10 +15,7 @@ import requests
 import os
 import sys
 from app.app_utils import gen_imencode
-from werkzeug.utils import secure_filename
-from videowrite import MyVideoCapture
 from app.framework import QD_Process
-import queue
 flask_app = Flask(__name__)
 
 # record video_url, task_name and pid
