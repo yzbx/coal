@@ -1,8 +1,11 @@
 import json
 import time
-from app.framework import QD_Reader
+from app.framework import QD_Reader,save_and_upload
 import matplotlib.pyplot as plt
 from multiprocessing import Queue,Process
+import cv2
+import os 
+import warnings
 
 def test_rtsp():
     with open('config.json','r') as f:
@@ -96,10 +99,49 @@ def test_read_from_queue():
         
     reader.join()
     
+def test_save_rtsp():
+#    import cv2
+#    import os
+#    from multiprocessing import Queue
+#    from app.framework import QD_Reader, save_and_upload
+    with open('config.json','r') as f:
+        config=json.load(f)
+    video_url=config['video_url']
+    reader=QD_Reader(video_url)
+    
+    idx=0
+    filenames=[]
+    while True:
+        time.sleep(1)
+        idx=idx+1
+        flag,frame=reader.read_from_queue()
+        if frame is not None:
+            filename=str(time.time())+'.jpg'
+            cv2.imwrite(filename,frame)
+            filenames.append(filename)
+        else:
+            print('cannot get image')
+            
+        if idx>50:
+            break
+    
+    assert len(filenames)>0
+        
+    queue=Queue()
+    save_video_name=os.path.join('test','test.mp4')
+    try:
+        save_and_upload(filenames,save_video_name,queue)
+    except Exception as e:
+        warnings.warn('exception {}'.format(e.__str__()))
+    else:
+        fileUrl=queue.get()
+        print('upload fileUrl',fileUrl)
+    
 if __name__ == '__main__':
 #     print('test rtsp')
 #     test_rtsp()
     print('test rtsp queue')
 #    test_rtsp_queue(worker_all)
 #    test_rtsp_queue(worker_newest)
-    test_read_from_queue()
+#    test_read_from_queue()
+    test_save_rtsp()

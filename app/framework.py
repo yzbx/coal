@@ -31,7 +31,8 @@ class QD_Basic():
 class QD_Reader():
     def __init__(self,video_url):
         self.video_url=video_url
-        self.max_retry_times=10
+        # max_retry_times=-1 for unlimited retry times
+        self.max_retry_times=-1
         self.retry_times=0
         self.cap=None
         
@@ -58,14 +59,11 @@ class QD_Reader():
             time.sleep(0.5)
             self.cap=cv2.VideoCapture(self.video_url)
             self.retry_times+=1
-            if self.retry_times>self.max_retry_times:
+            if self.retry_times>self.max_retry_times>=0:
                 raise StopIteration('retry times > {}'.format(self.max_retry_times))
-
-            if not self.cap.isOpened():
-                raise StopIteration('cannot open {}'.format(self.video_url))
                 return False,None
-            else:
-                return self.read()
+
+            return self.read()
             
     def update_video_url(self,video_url):
         assert self.sub_process is None
@@ -349,7 +347,6 @@ class QD_Database(QD_Basic):
         return alarm.id
     
     def update(self,id,fileUrl):
-        alarm=self.Mtrp_Alarm()
         self.session.query(self.Mtrp_Alarm).filter_by(id=id).update({'fileUrl':fileUrl})
         self.session.commit()
         
@@ -358,7 +355,7 @@ class QD_Database(QD_Basic):
         result=q.filter(self.Mtrp_Alarm.id==id).one()
         return result
         
-def save_and_upload(image_names,save_video_name,manager_dict):
+def save_and_upload(image_names,save_video_name,queue):
     """
     save the image in video and upload it
     """
@@ -380,11 +377,11 @@ def save_and_upload(image_names,save_video_name,manager_dict):
     
     if not os.path.exists(save_video_name):
         raise Exception('cannot save images to {video}'.format(video=save_video_name))
-        manager_dict.put('')
+        queue.put('')
     else:
         loader=QD_Upload()
         fileUrl=loader.upload(save_video_name)
-        manager_dict.put(fileUrl)
+        queue.put(fileUrl)
     
 if __name__ == '__main__':
     with open('config.json','r') as f:
