@@ -122,7 +122,7 @@ def test_save_rtsp():
         else:
             print('cannot get image')
             
-        if idx>50:
+        if idx>10:
             break
     
     assert len(filenames)>0
@@ -136,6 +136,8 @@ def test_save_rtsp():
     else:
         fileUrl=queue.get()
         print('upload fileUrl',fileUrl)
+        
+    reader.join()
     
 if __name__ == '__main__':
 #     print('test rtsp')

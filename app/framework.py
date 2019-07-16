@@ -10,6 +10,7 @@ from sqlalchemy.ext.automap import automap_base
 from sqlalchemy import Table,MetaData,create_engine,func
 from sqlalchemy.orm import sessionmaker,Session
 import warnings
+import numpy as np
 import sys
 if '.' not in sys.path:
     sys.path.insert(0,'.')
@@ -39,6 +40,8 @@ class QD_Reader():
         # queue for frame
         self.queue=None
         self.sub_process=None
+        self.time_out=3
+        self.time_used=0
         
     def read(self):
         """
@@ -51,19 +54,29 @@ class QD_Reader():
         
         flag,frame=self.cap.read()
         if flag:
+            self.time_used=0
             return True,frame
         else:
-            print('restart video capture')
+            print('restart video capture',self.video_url)
             self.cap.release()
             
+            self.time_used+=0.5
             time.sleep(0.5)
             self.cap=cv2.VideoCapture(self.video_url)
             self.retry_times+=1
             if self.retry_times>self.max_retry_times>=0:
-                raise StopIteration('retry times > {}'.format(self.max_retry_times))
+                raise StopIteration('retry times > {} for {}'.format(self.max_retry_times,self.video_url))
                 return False,None
-
-            return self.read()
+            
+            if self.time_used>self.time_out:
+                warn_img=np.zeros((600,800,3),dtype=np.uint8)
+                fontFace = cv2.FONT_HERSHEY_SIMPLEX
+                warn_img=cv2.putText(warn_img,text=self.video_url,org=(300,0),fontFace=fontFace,fontScale=2,color=(255,0,0),thickness=2)
+                self.time_used=0
+                warnings.warn('use warning image for bad rtsp {}'.format(self.video_url))
+                return True,warn_img
+            else:
+                return self.read()
             
     def update_video_url(self,video_url):
         assert self.sub_process is None
@@ -110,6 +123,12 @@ class QD_Reader():
         
     def join(self):
         if self.sub_process is not None:
+            self.sub_process.terminate()
+            self.sub_process.join()
+            
+    def __del__(self):
+        if self.sub_process is not None:
+            self.sub_process.terminate()
             self.sub_process.join()
         
 class QD_Writer():
@@ -145,6 +164,11 @@ class QD_Writer():
         self.sub_process=Process(target=save_and_upload,args=(self.image_names,self.save_video_name,self.queue))
         self.sub_process.start()
 #         self.sub_process.join() 
+        
+    def __del__(self):
+        if self.sub_process is not None:
+            self.sub_process.terminate()
+            self.sub_process.join()       
         
 class QD_Detector(QD_Basic):
     def __init__(self,cfg):
@@ -237,7 +261,8 @@ class QD_Alerter(QD_Basic):
                 if writer.sub_process is None:
                     writer.upload_in_subprocess()
                 elif writer.sub_process.is_alive():
-                    print('{} is running'.format(writer.sub_process.pid))
+                    pass
+                    #print('{} is running'.format(writer.sub_process.pid))
                 else:
                     # a sub process can join many times
                     writer.sub_process.join()

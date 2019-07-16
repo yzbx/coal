@@ -14,7 +14,7 @@ import os
 import requests
 import os
 import sys
-from app.app_utils import gen_imencode
+from app.app_utils import gen_imencode,check_rtsp,get_status
 from app.framework import QD_Process
 flask_app = Flask(__name__)
 
@@ -40,7 +40,11 @@ def index():
                             video_url='rtsp://admin:juancheng1@221.1.215.254:554',
                             task_name='detection_car',
                             others='{"date":"%s"}'%date)
-    
+
+@flask_app.route('/status')
+def status():
+    return get_status()
+
 @flask_app.route('/kill')
 def kill_subprocess():
     kill_all_subprocess()
@@ -94,7 +98,20 @@ def start_task():
                                              error_string='cannot obtain data {}'.format(key)))
         else:
             data[key]=value
-
+    
+    print(data)
+    if not check_rtsp(data['video_url']):
+        return json.dumps(generate_response(3,
+                                  app_name='start_demo',
+                                  video_url=data['video_url'],
+                                  error_string="cannot open rtsp"))
+    
+    pid=get_app_id(data)
+    if pid!=-1:
+        return json.dumps(generate_response(2,video_url=data['video_url'],
+                                         app_name='start_task',
+                                         error_string='already has process running for {}/{}'.format(data['video_url'],data['task_name'])))
+        
     proc=multiprocessing.Process(target=detection,args=[json.dumps(data)])
     proc.start()
     data['pid']=proc.pid
@@ -144,18 +161,23 @@ def stop_task():
                                          error_string='no process running for {}/{}'.format(data['video_url'],data['task_name'])))
 
     try:
-        p = psutil.Process(pid)
-        p.terminal()
+        kill_all_subprocess(pid)
+#        p = psutil.Process(pid)
+#        p.terminate()
     except Exception as e:
         return json.dumps(generate_response(3,
                                          video_url=data['video_url'],
                                          app_name='stop_task',
                                          succeed=1,pid=pid,error_string=e.__str__()))
-    return  json.dumps(generate_response(0,
-                                      video_url=data['video_url'],
-                                      app_name='stop_task',
-                                      succeed=1,
-                                      pid=pid))
+    else:
+        for d in app_config:
+            if d['pid']==pid:
+                app_config.remove(d)
+        return  json.dumps(generate_response(0,
+                                          video_url=data['video_url'],
+                                          app_name='stop_task',
+                                          succeed=1,
+                                          pid=pid))
 
 
 @flask_app.route('/demo')
@@ -179,6 +201,13 @@ def start_demo():
                                              error_string='cannot obtain data {}'.format(key)))
         else:
             data[key]=value
+            
+    if not check_rtsp(data['video_url']):
+        return json.dumps(generate_response(3,
+                                  app_name='start_demo',
+                                  video_url=data['video_url'],
+                                  error_string="cannot open rtsp"))
+
     try:
         with open('config.json','r') as f:
             config=json.load(f)

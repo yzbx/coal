@@ -7,6 +7,7 @@ from app.framework import QD_Process
 import psutil
 import torch
 import sys
+import signal
 
 def generate_response(code,app_name,video_url,error_string='',succeed=0,pid=None):
     if pid is None:
@@ -50,15 +51,19 @@ def kill_all_subprocess(pids=None):
     if pids==None: kill all child process pids
     else:kill pids
     """
-    current_process = psutil.Process()
-    children = current_process.children(recursive=True)
+    current_process = psutil.Process(pids)
+    children = current_process.children(recursive=False)
     for child in children:
-        print('Child pid is {}'.format(child.pid))
-        child.terminate()
         
-        if child.is_running():
-            child.kill()
-        child.wait(timeout=5)
+        if psutil.pid_exists(child.pid) and child.status()!='zombie':
+            os.killpg(child.pid,signal.SIGKILL)
+            if child.is_running():
+                child.terminate()
+            
+            if child.is_running():
+                child.kill()
+        else:
+            print('unexists Child pid is {}'.format(child.pid))
         
     torch.cuda.empty_cache() #cannot clear gpu memory
 #    def on_terminate(proc):
