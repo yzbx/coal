@@ -413,7 +413,8 @@ def save_and_upload(image_names,save_video_name,queue):
     """
     save the image in video and upload it
     """
-    codec = cv2.VideoWriter_fourcc(*"mp4v")
+#    codec = cv2.VideoWriter_fourcc(*"mp4v")
+    codec = cv2.VideoWriter_fourcc(*'H264')
     fps=30
     writer = None
     

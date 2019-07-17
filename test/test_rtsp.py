@@ -122,8 +122,10 @@ def test_save_rtsp():
         else:
             print('cannot get image')
             
-        if idx>10:
+        if idx>100:
             break
+        else:
+            print(idx,'save image to video')
     
     assert len(filenames)>0
         
