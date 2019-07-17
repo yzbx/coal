@@ -15,14 +15,6 @@ from app.split_image import split_image,merge_image,yolov3_loadImages,yolov3_loa
 import numpy as np
 from easydict import EasyDict as edict
 
-def filter_detection(det_results):
-    """
-    remove other object
-    """
-    target_objects=['person','bicycle','car','motorbike']
-    det=det_results
-    return det
-
 def detect(
         cfg,
         data_cfg,

@@ -312,7 +312,8 @@ class QD_Process(QD_Basic):
         self.reader=QD_Reader(self.cfg.video_url)
         self.detector=QD_Detector(self.cfg)
         self.alerter=QD_Alerter(cfg)
-        
+        self.queue=None
+        self.sub_process=None
         logging.info(json.dumps(cfg))
         
     def process(self):
@@ -325,7 +326,7 @@ class QD_Process(QD_Basic):
             else:
                 raise StopIteration('read frame failed!!!')
                 break
-    
+                
     def demo(self):
         while True:
             # flag,frame=self.reader.read()
@@ -337,6 +338,11 @@ class QD_Process(QD_Basic):
                 raise StopIteration('read frame failed!!!')
                 break
     
+    def __del__(self):
+        if self.sub_process is not None:
+            self.sub_process.terminate()
+            self.sub_process.join()
+            
 class QD_Upload():
     def __init__(self):
         with open('config.json','r') as f:

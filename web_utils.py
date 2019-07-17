@@ -2,7 +2,6 @@ import time
 import json
 import cv2
 import os
-from app.yolov3 import yolov3_detect
 from app.framework import QD_Process
 import psutil
 import torch
@@ -10,6 +9,7 @@ import sys
 import signal
 import warnings
 import logging
+from multiprocessing import Queue,Process
 
 def generate_response(code,app_name,video_url,error_string='',succeed=0,pid=None):
     if pid is None:
@@ -54,6 +54,55 @@ def detection(data):
         raise Exception('no such task name')
     
     return 0
+
+def detection_demo(data):
+    def write_to_queue(config,q):
+        worker=QD_Process(config)
+        while True:
+            flag,frame=worker.reader.read_from_queue()
+            if flag:
+                image,bbox=worker.detector.process(frame)
+                q.put(image)
+            else:
+                q.put(None)
+                break
+    
+    if data['task_name']=='car_detection':
+        with open('config.json','r') as f:
+            config=json.load(f)
+
+        config['video_url']=data['video_url']
+        config['task_name']=data['task_name']
+        
+        try:
+            others=json.loads(data['others'])
+            for key,value in others.items():
+                config['others'][key]=value
+            logging.info('update others {}'.format(others))
+        except:
+            logging.warn('bad others format {}'.format(data['others']))
+
+        try:
+            queue=Queue()
+            sub_process=Process(target=write_to_queue,args=(config,queue))
+            sub_process.start()
+            
+            while True:
+                image=queue.get()
+                if image is not None:
+                    yield image
+                else:
+                    logging.warn('terminate subprocess')
+                    sub_process.terminate()
+                    logging.warn('join subprocess')
+                    sub_process.join()
+                    logging.warn('raise exception')
+                    raise StopIteration('not image offered')
+                    
+        except Exception as e:
+            raise Exception('cannot start task because {}'.format(e.__str__()))
+    else:
+        raise Exception('no such task name')
 
 def kill_all_subprocess(root_pid=None):
     """

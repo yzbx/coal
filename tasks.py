@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 from flask import Flask,Response,stream_with_context
-from web_utils import detection,generate_response,get_data,kill_all_subprocess
+from web_utils import detection,detection_demo,generate_response,get_data,kill_all_subprocess
 from flask import request, jsonify, flash, send_from_directory
 from flask import render_template,redirect,url_for
 import subprocess
@@ -18,6 +18,7 @@ import signal
 from app.app_utils import gen_imencode,check_rtsp,get_status
 from app.framework import QD_Process
 import logging
+
 flask_app = Flask(__name__)
 
 logging.basicConfig(filename='qd.log',
@@ -243,7 +244,7 @@ def start_demo():
         config['video_url']=data['video_url']
         config['task_name']=data['task_name']
         config['others']=data['others']
-        p=QD_Process(config)
+        p=detection_demo(config)
     except RuntimeError as e:
         return json.dumps(generate_response(2,
                                   app_name='start_demo',
@@ -251,7 +252,7 @@ def start_demo():
                                   error_string=e.__str__()))
 #        return redirect(url_for('error'),code=307)
     else:
-        return Response(stream_with_context(gen_imencode(p.demo())),
+        return Response(stream_with_context(gen_imencode(p)),
                     mimetype='multipart/x-mixed-replace; boundary=frame')
 
 if __name__ == '__main__':
