@@ -100,7 +100,6 @@ def start_task():
         else:
             data[key]=value
     
-    print(data)
     if not check_rtsp(data['video_url']):
         return json.dumps(generate_response(3,
                                   app_name='start_demo',
@@ -112,15 +111,20 @@ def start_task():
         return json.dumps(generate_response(2,video_url=data['video_url'],
                                          app_name='start_task',
                                          error_string='already has process running for {}/{}'.format(data['video_url'],data['task_name'])))
-        
-    proc=multiprocessing.Process(target=detection,args=[json.dumps(data)])
-    proc.start()
-    data['pid']=proc.pid
-    assert data['pid']>0
-    app_config.append(data)
-    return json.dumps(generate_response(0,succeed=1,pid=proc.pid,
-                                     app_name='start_task',
-                                     video_url=data['video_url']))
+    
+    try:
+        proc=multiprocessing.Process(target=detection,args=[json.dumps(data)])
+        proc.start()
+        data['pid']=proc.pid
+        assert data['pid']>0
+        app_config.append(data)
+        return json.dumps(generate_response(0,succeed=1,pid=proc.pid,
+                                         app_name='start_task',
+                                         video_url=data['video_url']))
+    except Exception as e:
+        return json.dumps(generate_response(2,video_url=data['video_url'],
+                                         app_name='start_task',
+                                         error_string=e.__str__()))
 
 @flask_app.route('/task_result/<pid>')
 def task_result(pid):

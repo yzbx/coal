@@ -11,6 +11,7 @@ from sqlalchemy import Table,MetaData,create_engine,func
 from sqlalchemy.orm import sessionmaker,Session
 import warnings
 import numpy as np
+import torch
 import sys
 if '.' not in sys.path:
     sys.path.insert(0,'.')
@@ -27,7 +28,7 @@ class QD_Basic():
         elif isinstance(cfg,(edict)):
             self.cfg=cfg
         else:
-            raise Exception('unknown cfg type')
+            raise Exception('unknown cfg type')                    
     
 class QD_Reader():
     def __init__(self,video_url):
@@ -226,6 +227,10 @@ class QD_Detector(QD_Basic):
     def process(self,frame):
         image,bbox=self.detector.process_slide(frame)
         return image,bbox
+    
+    def __del__(self):
+        del self.detector
+        torch.cuda.empty_cache()
 
 
 class QD_Alerter(QD_Basic):
@@ -375,7 +380,8 @@ class QD_Database(QD_Basic):
         alarm.alarmTime=datetime.datetime.now()
         alarm.content=content
         alarm.fileUrl=''
-        
+        alarm.device_id=self.cfg.others.device_id
+        alarm.channel_no=self.cfg.others.channel_no
         alarm.createTime=datetime.datetime.now()
         
         max_id = self.session.query(func.max(self.Mtrp_Alarm.id)).scalar()

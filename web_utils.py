@@ -8,6 +8,7 @@ import psutil
 import torch
 import sys
 import signal
+import warnings
 
 def generate_response(code,app_name,video_url,error_string='',succeed=0,pid=None):
     if pid is None:
@@ -35,7 +36,13 @@ def detection(data_json):
 
         config['video_url']=data['video_url']
         config['task_name']=data['task_name']
-        config['others']=data['others']
+        
+        if isinstance(data['others'],dict):
+            for key,value in data['others'].items():
+                config['others'][key]=value
+        else:
+            warnings.warn('bad others format {}'.format(data['others']))
+            
         try:
             p=QD_Process(config)
             p.process()
@@ -43,7 +50,7 @@ def detection(data_json):
             raise Exception('cannot start task because {}'.format(e.__str__()))
     else:
         raise Exception('no such task name')
-
+    
     return 0
 
 def kill_all_subprocess(pid=None):
@@ -74,3 +81,5 @@ def kill_all_subprocess(pid=None):
     
     if p.children():   
         os.wait()
+        
+    torch.cuda.empty_cache()

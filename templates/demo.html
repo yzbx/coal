@@ -7,7 +7,11 @@ restart: <input type="checkbox" name="flag" value="True" />
 
 <form action="/start_demo" method="get">
 show image<br>
-video_url: <input type="text" value={{video_url}} name="video_url" />
+video_url: <input list="video_list" type="text" value={{video_url}} name="video_url" />
+<datalist id="video_list">
+    <option value="rtsp://admin:juancheng1@221.1.215.254:554">221.1.215.254</option>
+    <option value="rtsp://admin:Chinsoft@sx3.7766.org:954">sx3.7766.org</option>
+</datalist>
 <br>
 task_name: 
 <select name="task_name" value={{task_name}} >
