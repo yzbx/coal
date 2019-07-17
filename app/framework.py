@@ -387,6 +387,7 @@ class QD_Database(QD_Basic):
         alarm.content=content
         alarm.fileUrl=''
         alarm.event_id=event_id
+        alarm.logID=0
         alarm.device_id=self.cfg.others.device_id
         alarm.channel_no=self.cfg.others.channel_no
         alarm.createTime=datetime.datetime.now()
