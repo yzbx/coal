@@ -20,12 +20,13 @@ def get_process_status():
     current_process = psutil.Process()
     d['main']=current_process.pid
     children = current_process.children(recursive=False)
-    child_pid=[child.pid for child in children]
+    child_pid=[[child.pid,child.status()] for child in children]
     d['child']=child_pid
     
-    for pid in child_pid:
-        grandchilds=psutil.Process(pid).children()
-        d[str(pid)]=[g.pid for g in grandchilds]
+    for pid,status in child_pid:
+        child=psutil.Process(pid)
+        grandchilds=child.children()
+        d[str(pid)]=[[g.pid,g.status()] for g in grandchilds]
         
     return d
 

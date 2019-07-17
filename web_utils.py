@@ -29,8 +29,7 @@ def get_data(request,name):
 
     return True,value
 
-def detection(data_json):
-    data=json.loads(data_json)
+def detection(data):
     if data['task_name']=='car_detection':
         with open('config.json','r') as f:
             config=json.load(f)
@@ -38,12 +37,14 @@ def detection(data_json):
         config['video_url']=data['video_url']
         config['task_name']=data['task_name']
         
-        if isinstance(data['others'],dict):
-            for key,value in data['others'].items():
+        try:
+            others=json.loads(data['others'])
+            for key,value in others.items():
                 config['others'][key]=value
-        else:
-            warnings.warn('bad others format {}'.format(data['others']))
-            
+            logging.info('update others {}'.format(others))
+        except:
+            logging.warn('bad others format {}'.format(data['others']))
+
         try:
             p=QD_Process(config)
             p.process()

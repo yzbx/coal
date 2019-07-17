@@ -36,15 +36,17 @@ def get_app_id(data):
 
 @flask_app.route('/')
 def index():
-    date=time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+    with open('config.json','r') as f:
+        config=json.load(f)
+    p=psutil.Process()
     return render_template('index.html',
                             title='index',
-                            pid=0,
-                            status='?',
-                            is_running='?',
-                            video_url='rtsp://admin:juancheng1@221.1.215.254:554',
-                            task_name='detection_car',
-                            others='{"date":"%s"}'%date)
+                            pid=p.pid,
+                            status=p.status(),
+                            is_running=p.is_running(),
+                            video_url=config['video_url'],
+                            task_name=config['task_name'],
+                            others=config['others'])
 
 @flask_app.route('/qd.log')
 def log():
@@ -54,7 +56,8 @@ def log():
     
 @flask_app.route('/status')
 def status():
-    return get_status()
+    task_status=app_config.__str__()
+    return get_status()+"<br>"+task_status
 
 @flask_app.route('/kill')
 def kill_subprocess():
@@ -123,7 +126,7 @@ def start_task():
                                          error_string='already has process running for {}/{}'.format(data['video_url'],data['task_name'])))
     
     try:
-        proc=multiprocessing.Process(target=detection,args=[json.dumps(data)])
+        proc=multiprocessing.Process(target=detection,args=[data])
         proc.start()
         data['pid']=proc.pid
         assert data['pid']>0
@@ -148,15 +151,12 @@ def task_result(pid):
                                          app_name='task_result',
                                          succeed=1,pid=pid,
                                          error_string=e.__str__()))
-
-    return render_template('result.html',
-                            title=pid,
-                            pid=pid,
-                            status=p.status(),
-                            is_running=p.is_running(),
-                            video_url='rtsp/xxx',
-                            task_name='detection',
-                            others='2019/05/28')
+    
+    result={}
+    result['pid']=p.pid
+    result['status']=p.status()
+    result['is_running']=p.is_running()
+    return json.dumps(result)
 
 @flask_app.route('/stop_task',methods=['POST','GET'])
 def stop_task():
@@ -179,13 +179,19 @@ def stop_task():
 
     try:
         kill_all_subprocess(pid)
-        os.kill(pid,signal.SIGKILL)
-        os.wait()
+        
+        if psutil.pid_exists(pid):
+            os.kill(pid,signal.SIGKILL)
+            p = psutil.Process(pid)
+            if p.children():
+                os.wait()
     except Exception as e:
         return json.dumps(generate_response(3,
                                          video_url=data['video_url'],
                                          app_name='stop_task',
-                                         succeed=1,pid=pid,error_string=e.__str__()))
+                                         succeed=1,
+                                         pid=pid,
+                                         error_string=e.__str__()))
     else:
         logging.info(app_config)
         for d in app_config:
