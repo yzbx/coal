@@ -17,7 +17,7 @@ if '.' not in sys.path:
     sys.path.insert(0,'.')
 sys.path.insert(0,'./model/yolov3')
 from app.algorithm import yolov3_slideWindows
-
+import logging
 
 class QD_Basic():
     def __init__(self,cfg):
@@ -58,7 +58,7 @@ class QD_Reader():
             self.time_used=0
             return True,frame
         else:
-            print('restart video capture',self.video_url)
+            logging.info('restart video capture {}'.format(self.video_url))
             self.cap.release()
             
             self.time_used+=0.5
@@ -193,6 +193,7 @@ class QD_Detector(QD_Basic):
         
         opt=self.get_opt()
         self.detector=yolov3_slideWindows(opt)
+        self.detector.classes=self.class_names
         
     def get_opt(self):
         if hasattr(self.cfg,'task_name'):
@@ -202,15 +203,18 @@ class QD_Detector(QD_Basic):
         
         opt=edict()
         if task_name=='car_detection':
+            self.class_names=['car','bicycle','motorbike','truck']
             opt.cfg='app/config/yolov3.cfg'
             opt.data_cfg='app/config/coco.data'
             opt.weights='app/config/yolov3.weights'
             opt.img_size=416
             return opt
         elif task_name=='excavator_detection':
+            self.class_names=['excavator','digger','truck']
             warnings.warn('running excavator detection')
             model_name='digger_cls1_0708'
         elif task_name=='truck_detection':
+            self.class_names=['excavator','digger','truck']
             warnings.warn('running truck detection')
             model_name='digger_cls3_0712'
         else:
@@ -279,7 +283,6 @@ class QD_Alerter(QD_Basic):
                     writer.upload_in_subprocess()
                 elif writer.sub_process.is_alive():
                     pass
-                    #print('{} is running'.format(writer.sub_process.pid))
                 else:
                     # a sub process can join many times
                     writer.sub_process.join()
@@ -287,7 +290,7 @@ class QD_Alerter(QD_Basic):
                     self.writers[idx]=None
                     fileUrl=writer.queue.get()
                     writer.update_database(fileUrl)
-                    print('fileUrl is {fileUrl}'.format(fileUrl=fileUrl))
+                    logging.info('update database fileUrl is {fileUrl}'.format(fileUrl=fileUrl))
             else:
                 writer.write_sync(filename)
         
@@ -296,6 +299,7 @@ class QD_Alerter(QD_Basic):
         if rule:
             writer=QD_Writer(self.cfg,rule,self.filenames)
             writer.insert_database(rule)
+            logging.info('insert database rule is {}'.format(rule))
             self.writers.append(writer)
         
 class QD_Process(QD_Basic):
@@ -304,6 +308,8 @@ class QD_Process(QD_Basic):
         self.reader=QD_Reader(self.cfg.video_url)
         self.detector=QD_Detector(self.cfg)
         self.alerter=QD_Alerter(cfg)
+        
+        logging.info(json.dumps(cfg))
         
     def process(self):
         while True:

@@ -17,8 +17,12 @@ import sys
 import signal
 from app.app_utils import gen_imencode,check_rtsp,get_status
 from app.framework import QD_Process
+import logging
 flask_app = Flask(__name__)
 
+logging.basicConfig(filename='qd.log',
+                    level=logging.INFO,
+                    format='%(asctime)s %(levelname)s %(filename)s %(funcName)s %(lineno)d %(message)s')
 # record video_url, task_name and pid
 app_config=[]
 
@@ -42,6 +46,12 @@ def index():
                             task_name='detection_car',
                             others='{"date":"%s"}'%date)
 
+@flask_app.route('/qd.log')
+def log():
+    with open('qd.log','r') as f:
+        content=f.read()
+        return content.replace('\n','<br>').replace(' ','&nbsp')
+    
 @flask_app.route('/status')
 def status():
     return get_status()
@@ -117,7 +127,9 @@ def start_task():
         proc.start()
         data['pid']=proc.pid
         assert data['pid']>0
+        logging.info(app_config)
         app_config.append(data)
+        logging.info(app_config)
         return json.dumps(generate_response(0,succeed=1,pid=proc.pid,
                                          app_name='start_task',
                                          video_url=data['video_url']))
@@ -175,9 +187,11 @@ def stop_task():
                                          app_name='stop_task',
                                          succeed=1,pid=pid,error_string=e.__str__()))
     else:
+        logging.info(app_config)
         for d in app_config:
             if d['pid']==pid:
                 app_config.remove(d)
+        logging.info(app_config)
         return  json.dumps(generate_response(0,
                                           video_url=data['video_url'],
                                           app_name='stop_task',

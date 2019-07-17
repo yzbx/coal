@@ -142,7 +142,6 @@ def filter_label(det,classes,device):
         det_idx=[]
         for c in det[:,-1]:
             if classes[int(c)] not in ['car','bicycle','motorbike','truck']:
-                # print('filter out',classes[int(c)])
                 det_idx.append(0)
             else:
                 det_idx.append(1)

@@ -32,7 +32,7 @@ def get_process_status():
 def get_status():
     d={}
     d['process']=get_process_status()
-    d['nvidia-smi']=str(subprocess.check_output(['nvidia-smi']))
+    d['nvidia-smi']=subprocess.check_output(['nvidia-smi']).decode('utf-8')
     
     html=''
     for k,v in d.items():
@@ -40,5 +40,5 @@ def get_status():
         if isinstance(v,dict):
             html+=json.dumps(v).replace('\n','<br>').replace(' ','&nbsp')
         else:
-            html+=v.replace('\\n','<br>').replace(' ','&nbsp')
+            html+=v.replace('\n','<br>').replace(' ','&nbsp')
     return html

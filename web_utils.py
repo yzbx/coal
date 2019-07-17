@@ -9,6 +9,7 @@ import torch
 import sys
 import signal
 import warnings
+import logging
 
 def generate_response(code,app_name,video_url,error_string='',succeed=0,pid=None):
     if pid is None:
@@ -55,8 +56,7 @@ def detection(data_json):
 
 def kill_all_subprocess(pid=None):
     """
-    if pids==None: kill all child process pids
-    else:kill pids
+    kill all child process pids
     """
     
     def kill_group(pid):
@@ -75,7 +75,7 @@ def kill_all_subprocess(pid=None):
     for c in childs:
         if c.status=='zombie':
             pid,status=os.waitpid(c.pid,os.WNOHANG)
-            print(pid,status)
+            logging.info('wait zombie pid={}'.format(pid))
         else:
             kill_group(c.pid)
     
