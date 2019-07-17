@@ -46,36 +46,31 @@ def detection(data_json):
 
     return 0
 
-def kill_all_subprocess(pids=None):
+def kill_all_subprocess(pid=None):
     """
     if pids==None: kill all child process pids
     else:kill pids
     """
-    current_process = psutil.Process(pids)
-    children = current_process.children(recursive=False)
-    for child in children:
+    
+    def kill_group(pid):
+        """
+        kill pid and it's child
+        """
+        p=psutil.Process(pid)
+        childs=p.children()
+        for c in childs:
+            kill_group(c.pid)
         
-        if psutil.pid_exists(child.pid) and child.status()!='zombie':
-            os.killpg(child.pid,signal.SIGKILL)
-            if child.is_running():
-                child.terminate()
+        p.kill()
             
-            if child.is_running():
-                child.kill()
+    p = psutil.Process(pid)
+    childs=p.children()
+    for c in childs:
+        if c.status=='zombie':
+            pid,status=os.waitpid(c.pid,os.WNOHANG)
+            print(pid,status)
         else:
-            print('unexists Child pid is {}'.format(child.pid))
-        
-    torch.cuda.empty_cache() #cannot clear gpu memory
-#    def on_terminate(proc):
-#        print("process {} terminated with exit code {}".format(proc, proc.returncode))
-#    
-#    procs = psutil.Process().children()
-#    if pids is not None:
-#        procs = [p for p in procs if p.pid in pids]
-#        
-#    if len(procs)>0:
-#        for p in procs:
-#            p.terminate()
-#        gone, alive = psutil.wait_procs(procs, timeout=3, callback=on_terminate)
-#        for p in alive:
-#            p.kill()
+            kill_group(c.pid)
+    
+    if p.children():   
+        os.wait()

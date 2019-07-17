@@ -14,6 +14,7 @@ import os
 import requests
 import os
 import sys
+import signal
 from app.app_utils import gen_imencode,check_rtsp,get_status
 from app.framework import QD_Process
 flask_app = Flask(__name__)
@@ -162,8 +163,8 @@ def stop_task():
 
     try:
         kill_all_subprocess(pid)
-#        p = psutil.Process(pid)
-#        p.terminate()
+        os.kill(pid,signal.SIGKILL)
+        os.wait()
     except Exception as e:
         return json.dumps(generate_response(3,
                                          video_url=data['video_url'],

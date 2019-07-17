@@ -131,21 +131,32 @@ class QD_Reader():
             self.sub_process.terminate()
             self.sub_process.join()
         
-class QD_Writer():
+class QD_Writer(QD_Basic):
     """
     cannot save all frame in memory
     5min, 30fps 1024x2048 RGB image need memory:
     5*60*30*1024x2048x3 > 30G
     """
-    def __init__(self,rule,filenames,save_frame_number):
+    def __init__(self,cfg,rule,filenames):
+        super().__init__(cfg)
         self.rule=rule
         self.save_video_name=str(time.time())+'.mp4'
-        self.save_frame_number=save_frame_number
+        self.save_frame_number=self.cfg.save_frame_number
         
         valid_num=self.save_frame_number//2
         self.image_names=filenames[-valid_num:]
         self.sub_process=None
         self.queue=None
+        
+        # insert record to database
+        self.database=QD_Database(cfg)
+        
+    def insert_database(self,content):
+        self.id=self.database.insert(content)
+        return self.id 
+    
+    def update_database(self,fileUrl):
+        self.database.update(self.id,fileUrl)
     
     def write_sync(self,filename):
         if not self.can_upload():
@@ -221,10 +232,11 @@ class QD_Alerter(QD_Basic):
     """
     save image to disk and record the filename
     """
-    def __init__(self,save_frame_number):
+    def __init__(self,cfg):
+        super().__init__(cfg)
         self.filenames=[]
         self.writers=[]
-        self.save_frame_number=save_frame_number
+        self.save_frame_number=self.cfg.save_frame_number
         self.max_filesize=self.save_frame_number*2
         
     def bbox2rule(self,bbox):
@@ -268,14 +280,17 @@ class QD_Alerter(QD_Basic):
                     writer.sub_process.join()
                     os.remove(writer.save_video_name)
                     self.writers[idx]=None
-                    print('fileUrl is {fileUrl}'.format(fileUrl=writer.queue.get()))
+                    fileUrl=writer.queue.get()
+                    writer.update_database(fileUrl)
+                    print('fileUrl is {fileUrl}'.format(fileUrl=fileUrl))
             else:
                 writer.write_sync(filename)
         
         self.writers=[w for w in self.writers if w is not None]
         rule=self.bbox2rule(bbox)
         if rule:
-            writer=QD_Writer(rule,self.filenames,self.save_frame_number)
+            writer=QD_Writer(self.cfg,rule,self.filenames)
+            writer.insert_database(rule)
             self.writers.append(writer)
         
 class QD_Process(QD_Basic):
@@ -283,7 +298,7 @@ class QD_Process(QD_Basic):
         super().__init__(cfg)
         self.reader=QD_Reader(self.cfg.video_url)
         self.detector=QD_Detector(self.cfg)
-        self.alerter=QD_Alerter(self.cfg.save_frame_number)
+        self.alerter=QD_Alerter(cfg)
         
     def process(self):
         while True:

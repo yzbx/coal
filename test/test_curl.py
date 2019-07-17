@@ -48,6 +48,15 @@ class CurlTest(unittest.TestCase):
     def test_kill(self):
         url='127.0.0.1:8205/kill'
         cmd='curl {}'.format(url)
+        print(cmd)
+        result=subprocess.check_output(cmd,shell=True).decode('utf-8')
+        print(result)
+        self.assertTrue(result.find('kill')>=0)
+        
+    def test_restart(self):
+        url='127.0.0.1:8205/restart'
+        cmd='curl -G -V -X GET --data "flag=True" {}'.format(url)
+        print(cmd)
         result=subprocess.check_output(cmd,shell=True).decode('utf-8')
         print(result)
         self.assertTrue(result.find('restart')>=0)
