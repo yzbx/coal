@@ -55,9 +55,11 @@ def detection(data):
     
     return 0
 
-def kill_all_subprocess(pid=None):
+def kill_all_subprocess(root_pid=None):
     """
-    kill all child process pids
+    kill all child process for root_pid
+    if root_pid is not None:
+        kill root_pid
     """
     
     def kill_group(pid):
@@ -71,16 +73,23 @@ def kill_all_subprocess(pid=None):
         
         p.kill()
             
-    p = psutil.Process(pid)
+    p = psutil.Process(root_pid)
     childs=p.children()
     for c in childs:
         if c.status=='zombie':
+            logging.info('wait zombie pid={}'.format(c.pid))
             pid,status=os.waitpid(c.pid,os.WNOHANG)
-            logging.info('wait zombie pid={}'.format(pid))
         else:
             kill_group(c.pid)
-    
-    if p.children():   
+
+    if root_pid is None:
+        if p.children():
+            logging.info('wait pid={}'.format(p.pid))
+            os.wait()
+            logging.info('wait pid={}'.format(p.pid))
+    else:
+        p.kill()
+        logging.info('wait pid={}'.format(p.pid))
         os.wait()
-        
+        logging.info('wait pid={}'.format(p.pid))
     torch.cuda.empty_cache()

@@ -27,6 +27,7 @@ logging.basicConfig(filename='qd.log',
 app_config=[]
 
 def get_app_id(data):
+    global app_config
     for cfg in app_config:
         if data['video_url']==cfg['video_url'] and \
             data['task_name']==cfg['task_name']:
@@ -56,12 +57,15 @@ def log():
     
 @flask_app.route('/status')
 def status():
+    global app_config
     task_status=app_config.__str__()
     return get_status()+"<br>"+task_status
 
 @flask_app.route('/kill')
 def kill_subprocess():
+    global app_config
     kill_all_subprocess()
+    app_config=[]
     return "kill all sub process"
 
 @flask_app.route('/error',methods=['POST','GET'])
@@ -89,6 +93,8 @@ def restart():
     """
     just restart demo, kill demo pid
     """
+    global app_config
+    
     data={'flag':'False'}
     for key in data.keys():
         flag,value=get_data(request,key)
@@ -96,12 +102,14 @@ def restart():
             data[key]=value
     if data['flag']=='True':
         kill_all_subprocess()
+        app_config=[]
         return "restart okay"
     else:
         return "hello world"
 
 @flask_app.route('/start_task', methods=['POST', 'GET'])
 def start_task():
+    global app_config
     data={'video_url':None,'task_name':None,'others':None}
     for key in data.keys():
         flag,value=get_data(request,key)
@@ -160,6 +168,8 @@ def task_result(pid):
 
 @flask_app.route('/stop_task',methods=['POST','GET'])
 def stop_task():
+    global app_config
+    
     data={'video_url':None,'task_name':None}
     for key in data.keys():
         flag,value=get_data(request,key)
@@ -179,12 +189,6 @@ def stop_task():
 
     try:
         kill_all_subprocess(pid)
-        
-        if psutil.pid_exists(pid):
-            os.kill(pid,signal.SIGKILL)
-            p = psutil.Process(pid)
-            if p.children():
-                os.wait()
     except Exception as e:
         return json.dumps(generate_response(3,
                                          video_url=data['video_url'],

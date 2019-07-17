@@ -247,6 +247,7 @@ class QD_Alerter(QD_Basic):
         self.writers=[]
         self.save_frame_number=self.cfg.save_frame_number
         self.max_filesize=self.save_frame_number*2
+        self.cooling_time=0
         
     def bbox2rule(self,bbox):
         """
@@ -296,7 +297,10 @@ class QD_Alerter(QD_Basic):
         
         self.writers=[w for w in self.writers if w is not None]
         rule=self.bbox2rule(bbox)
-        if rule:
+        if self.cooling_time>0:
+            self.cooling_time-=1
+        if rule and self.cooling_time<=0:
+            self.cooling_time=self.save_frame_number//2
             writer=QD_Writer(self.cfg,rule,self.filenames)
             writer.insert_database(rule)
             logging.info('insert database rule is {}'.format(rule))
