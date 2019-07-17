@@ -19,6 +19,7 @@ import torch
 import numpy as np
 import requests
 import warnings
+import logging
 
 def my_nms(pred,nms_thres=0.5):
     """
@@ -160,6 +161,14 @@ class yolov3_slideWindows(yolov3_loadImages):
         self.colors=[[random.randint(0, 255) for _ in range(3)] for _ in range(len(self.classes))]
         self.device = select_device()
         self.model=self.load_model()
+        
+        # for yolov3.weight, filter the class
+        # for self design model, no need to filter 
+        self.filter_classes=['car','bicycle','motorbike','truck']
+        for c in self.filter_classes:
+            if c not in self.classes:
+                self.filter_classes=self.classes
+                break
 
     def load_model(self):
         model = Darknet(self.opt.cfg,self.img_size)

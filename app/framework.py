@@ -193,7 +193,7 @@ class QD_Detector(QD_Basic):
         
         opt=self.get_opt()
         self.detector=yolov3_slideWindows(opt)
-        self.detector.classes=self.class_names
+        self.detector.filter_classes=self.class_names
         
     def get_opt(self):
         if hasattr(self.cfg,'task_name'):
@@ -381,11 +381,12 @@ class QD_Database(QD_Basic):
     def __exit__(self):
         self.session.close()
         
-    def insert(self,content):
+    def insert(self,content,event_id=1):
         alarm=self.Mtrp_Alarm()
         alarm.alarmTime=datetime.datetime.now()
         alarm.content=content
         alarm.fileUrl=''
+        alarm.event_id=event_id
         alarm.device_id=self.cfg.others.device_id
         alarm.channel_no=self.cfg.others.channel_no
         alarm.createTime=datetime.datetime.now()
