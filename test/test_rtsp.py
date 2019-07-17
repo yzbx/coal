@@ -122,7 +122,7 @@ def test_save_rtsp():
         else:
             print('cannot get image')
             
-        if idx>100:
+        if idx>10:
             break
         else:
             print(idx,'save image to video')
