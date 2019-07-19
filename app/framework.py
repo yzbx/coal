@@ -5,6 +5,7 @@ import time
 import datetime
 from easydict import EasyDict as edict
 import requests
+import subprocess
 from multiprocessing import Process, Queue
 from sqlalchemy.ext.automap import automap_base
 from sqlalchemy import Table,MetaData,create_engine,func
@@ -141,7 +142,8 @@ class QD_Writer(QD_Basic):
     def __init__(self,cfg,rule,filenames):
         super().__init__(cfg)
         self.rule=rule
-        self.save_video_name=str(time.time())+'.mp4'
+        self.save_video_name=os.path.join('static',str(time.time())+'.mp4')
+        self.convert_video_name=os.path.join('static','x264_'+os.path.basename(self.save_video_name))
         self.save_frame_number=self.cfg.save_frame_number
         
         valid_num=self.save_frame_number//2
@@ -193,7 +195,7 @@ class QD_Detector(QD_Basic):
         
         opt=self.get_opt()
         self.detector=yolov3_slideWindows(opt)
-        self.detector.filter_classes=self.class_names
+        # self.detector.filter_classes=self.class_names
         
     def get_opt(self):
         if hasattr(self.cfg,'task_name'):
@@ -268,7 +270,7 @@ class QD_Alerter(QD_Basic):
             return None
     
     def process(self,image,bbox):
-        filename=str(time.time())+'.jpg'
+        filename=os.path.join('static',str(time.time())+'.jpg')
         cv2.imwrite(filename,image)
         self.filenames.append(filename)
         
@@ -288,6 +290,7 @@ class QD_Alerter(QD_Basic):
                     # a sub process can join many times
                     writer.sub_process.join()
                     os.remove(writer.save_video_name)
+                    os.remove(writer.convert_video_name)
                     self.writers[idx]=None
                     fileUrl=writer.queue.get()
                     writer.update_database(fileUrl)
@@ -419,7 +422,7 @@ class QD_Database(QD_Basic):
         result=q.filter(self.Mtrp_Alarm.id==id).one()
         return result
         
-def save_and_upload(image_names,save_video_name,queue):
+def save_and_upload(image_names,save_video_name,queue,upload=True):
     """
     save the image in video and upload it
     """
@@ -427,6 +430,8 @@ def save_and_upload(image_names,save_video_name,queue):
 #    codec = cv2.VideoWriter_fourcc(*'X264')
 #    codec=0x21
 #    codec = cv2.VideoWriter_fourcc(*'CJPG')
+#    codec = cv2.VideoWriter_fourcc(*'avc1')
+#    codec = cv2.VideoWriter_fourcc(*'MP4V')
     fps=30
     writer = None
     
@@ -442,12 +447,21 @@ def save_and_upload(image_names,save_video_name,queue):
         
     writer.release()
     
+    convert_video_name=os.path.join('static','x264_'+os.path.basename(save_video_name))
+    convert_cmd='ffmpeg -i {} -vcodec h264 {}'.format(save_video_name,convert_video_name)
+    subprocess.run(convert_cmd,shell=True)
+        
     if not os.path.exists(save_video_name):
         raise Exception('cannot save images to {video}'.format(video=save_video_name))
         queue.put('')
-    else:
+    
+    if not os.path.exists(convert_video_name):
+        raise Exception('cannot convert {in_video} to {out_video}'.format(in_video=save_video_name,out_video=convert_video_name))
+        queue.put('')
+    
+    if upload:
         loader=QD_Upload()
-        fileUrl=loader.upload(save_video_name)
+        fileUrl=loader.upload(convert_video_name)
         queue.put(fileUrl)
     
 if __name__ == '__main__':

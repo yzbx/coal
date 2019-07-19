@@ -19,7 +19,7 @@ from app.app_utils import gen_imencode,check_rtsp,get_status
 from app.framework import QD_Process
 import logging
 
-flask_app = Flask(__name__)
+flask_app = Flask(__name__,static_url_path='/static')
 
 logging.basicConfig(filename='qd.log',
                     level=logging.INFO,
@@ -49,6 +49,10 @@ def index():
                             video_url=config['video_url'],
                             task_name=config['task_name'],
                             others=config['others'])
+
+#@flask_app.route('/file/<path:path>')
+#def send_js(path):
+#    return send_from_directory('test', path)
 
 @flask_app.route('/qd.log')
 def log():

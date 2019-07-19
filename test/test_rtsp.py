@@ -112,7 +112,7 @@ def test_save_rtsp():
     idx=0
     filenames=[]
     while True:
-        time.sleep(1)
+        time.sleep(0.1)
         idx=idx+1
         flag,frame=reader.read_from_queue()
         if frame is not None:
@@ -122,7 +122,7 @@ def test_save_rtsp():
         else:
             print('cannot get image')
             
-        if idx>10:
+        if idx>100:
             break
         else:
             print(idx,'save image to video')
@@ -130,14 +130,16 @@ def test_save_rtsp():
     assert len(filenames)>0
         
     queue=Queue()
-    save_video_name=os.path.join('test','test.mp4')
+    upload=False
+    save_video_name=os.path.join('static','test.mp4')
     try:
-        save_and_upload(filenames,save_video_name,queue)
+        save_and_upload(filenames,save_video_name,queue,upload=upload)
     except Exception as e:
         warnings.warn('exception {}'.format(e.__str__()))
     else:
-        fileUrl=queue.get()
-        print('upload fileUrl',fileUrl)
+        if upload:
+            fileUrl=queue.get()
+            print('upload fileUrl',fileUrl)
         
     reader.join()
     

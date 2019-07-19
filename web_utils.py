@@ -67,7 +67,7 @@ def detection_demo(data):
                 q.put(None)
                 break
     
-    if data['task_name']=='car_detection':
+    if data['task_name']:
         with open('config.json','r') as f:
             config=json.load(f)
 
