@@ -65,7 +65,7 @@ def detection_demo(data):
                 if q.qsize()<3:
                     q.put(image)
                 else:
-                    q.get(image)
+                    q.get()
                     q.put(image)
             else:
                 q.put(None)
