@@ -59,16 +59,21 @@ def detection_demo(data):
     def write_to_queue(config,q):
         worker=QD_Process(config)
         while True:
-            flag,frame=worker.reader.read_from_queue()
-            if flag:
-                image,bbox=worker.detector.process(frame)
-                if q.qsize()<3:
-                    q.put(image)
+            try:
+                flag,frame=worker.reader.read_from_queue()
+                if flag:
+                    image,bbox=worker.detector.process(frame)
+                    if q.qsize()<3:
+                        q.put(image)
+                    else:
+                        q.get()
+                        q.put(image)
                 else:
-                    q.get()
-                    q.put(image)
-            else:
+                    q.put(None)
+                    break
+            except Exception as e:
                 q.put(None)
+                raise Exception('cannot start demo because {}'.format(e.__str__()))
                 break
     
     if data['task_name']:

@@ -225,6 +225,7 @@ def demo():
 
 @flask_app.route('/start_demo',methods=['POST','GET'])
 def start_demo():
+    global app_config
     data={'video_url':None,'task_name':None,'others':None}
     for key in data.keys():
         flag,value=get_data(request,key)
@@ -243,6 +244,12 @@ def start_demo():
                                   error_string="cannot open rtsp"))
 
     try:
+        main=psutil.Process()
+        bg_pids=[p['pid'] for p in app_config]
+        for child in main.children():
+            if child.pid not in bg_pids:
+                kill_all_subprocess(child.pid)
+            
         with open('config.json','r') as f:
             config=json.load(f)
         config['video_url']=data['video_url']
