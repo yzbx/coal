@@ -62,7 +62,11 @@ def detection_demo(data):
             flag,frame=worker.reader.read_from_queue()
             if flag:
                 image,bbox=worker.detector.process(frame)
-                q.put(image)
+                if q.qsize()<3:
+                    q.put(image)
+                else:
+                    q.get(image)
+                    q.put(image)
             else:
                 q.put(None)
                 break
