@@ -1,13 +1,13 @@
 import json
 import time
 from app.framework import QD_Reader,save_and_upload
-import matplotlib.pyplot as plt
 from multiprocessing import Queue,Process
 import cv2
 import os 
 import warnings
 
 def test_rtsp():
+    import matplotlib.pyplot as plt
     with open('config.json','r') as f:
         config=json.load(f)
     video_url=config['video_url']
@@ -46,6 +46,7 @@ def worker_all(q,reader):
     q.put(None)
     
 def test_rtsp_queue(worker):
+    import matplotlib.pyplot as plt
     with open('config.json','r') as f:
         config=json.load(f)
     video_url=config['video_url']
@@ -79,6 +80,7 @@ def test_rtsp_queue(worker):
     p.join()
     
 def test_read_from_queue():
+    import matplotlib.pyplot as plt
     with open('config.json','r') as f:
         config=json.load(f)
     video_url=config['video_url']

@@ -193,9 +193,12 @@ class QD_Detector(QD_Basic):
         else:
             self.others=''
         
-        opt=self.get_opt()
-        self.detector=yolov3_slideWindows(opt)
-        # self.detector.filter_classes=self.class_names
+        try:
+            opt=self.get_opt()
+        except Exception as e:
+            raise Exception(e.__str__())
+        else:
+            self.detector=yolov3_slideWindows(opt)
         
     def get_opt(self):
         if hasattr(self.cfg,'task_name'):
@@ -204,30 +207,26 @@ class QD_Detector(QD_Basic):
             task_name='car_detection'
         
         opt=edict()
-        if task_name=='car_detection':
-            self.class_names=['car','bicycle','motorbike','truck']
-            opt.cfg='app/config/yolov3.cfg'
-            opt.data_cfg='app/config/coco.data'
-            opt.weights='app/config/yolov3.weights'
-            opt.img_size=416
-            return opt
-        elif task_name=='excavator_detection':
-            self.class_names=['excavator','digger','truck']
-            warnings.warn('running excavator detection')
-            model_name='digger_cls1_0708'
-        elif task_name=='truck_detection':
-            self.class_names=['excavator','digger','truck']
-            warnings.warn('running truck detection')
-            model_name='digger_cls3_0712'
+        if task_name in ['car_detection','detection_car']:
+            task_name='car_detection'
+        elif task_name in ['excavator_detection','detection_excavator','truck_detection','detection_truck']:
+            task_name='excavator_detection'
+        elif task_name in ['helmet_detection','detection_helmet']:
+            task_name='helmet_detection'
         else:
             warnings.warn('unknown task name {}'.format(task_name))
             raise Exception('unknwn task name {}'.format(task_name))
         
-        opt.cfg=os.path.join('yzbx',model_name+'.cfg')
-        opt.data_cfg=os.path.join('yzbx',model_name+'.data')
-        opt.weights=os.path.join('weights',model_name+'.pt')
-        opt.img_size=416
+        for model in self.cfg.models:
+            if model.task_name == task_name:
+                opt.cfg=model.cfg
+                opt.data_cfg=model.data_cfg
+                opt.weights=model.weights
+                opt.img_size=416
+                
+                return opt
         
+        raise Exception('cannot find model with task_name={}'.format(task_name))
         return opt
         
     def process(self,frame):
@@ -312,11 +311,15 @@ class QD_Alerter(QD_Basic):
 class QD_Process(QD_Basic):
     def __init__(self,cfg):
         super().__init__(cfg)
-        self.reader=QD_Reader(self.cfg.video_url)
-        self.detector=QD_Detector(self.cfg)
-        self.alerter=QD_Alerter(cfg)
         self.queue=None
         self.sub_process=None
+        self.reader=QD_Reader(self.cfg.video_url)
+        try:
+            self.detector=QD_Detector(self.cfg)
+        except Exception as e:
+            raise Exception(e.__str__())
+        
+        self.alerter=QD_Alerter(cfg)
         logging.info(json.dumps(cfg))
         
     def process(self):
