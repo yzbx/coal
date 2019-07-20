@@ -18,6 +18,5 @@ class ConfigTest(unittest.TestCase):
             self.assertTrue(os.path.exists(model.weights),
                             'weight file {} not exist'.format(model.weights))
         
-        
 if __name__ == '__main__':
     unittest.main()

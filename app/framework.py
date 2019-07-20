@@ -195,10 +195,11 @@ class QD_Detector(QD_Basic):
         
         try:
             opt=self.get_opt()
-        except Exception as e:
-            raise Exception(e.__str__())
-        else:
             self.detector=yolov3_slideWindows(opt)
+        except Exception as e:
+            self.detector=None
+            raise Exception(e.__str__())
+            
         
     def get_opt(self):
         if hasattr(self.cfg,'task_name'):
@@ -313,13 +314,13 @@ class QD_Process(QD_Basic):
         super().__init__(cfg)
         self.queue=None
         self.sub_process=None
-        self.reader=QD_Reader(self.cfg.video_url)
         try:
+            self.reader=QD_Reader(self.cfg.video_url)
             self.detector=QD_Detector(self.cfg)
+            self.alerter=QD_Alerter(cfg)
         except Exception as e:
             raise Exception(e.__str__())
         
-        self.alerter=QD_Alerter(cfg)
         logging.info(json.dumps(cfg))
         
     def process(self):

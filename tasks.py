@@ -71,7 +71,7 @@ def kill_subprocess():
     global app_config
     kill_all_subprocess()
     app_config=[]
-    return "kill all sub process"
+    return redirect(url_for('status'))
 
 @flask_app.route('/error',methods=['POST','GET'])
 def error():
@@ -108,7 +108,7 @@ def restart():
     if data['flag']=='True':
         kill_all_subprocess()
         app_config=[]
-        return "restart okay"
+        return redirect(url_for('status'))
     else:
         return "hello world"
 

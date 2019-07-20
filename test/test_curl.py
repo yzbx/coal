@@ -51,7 +51,7 @@ class CurlTest(unittest.TestCase):
         print(cmd)
         result=subprocess.check_output(cmd,shell=True).decode('utf-8')
         print(result)
-        self.assertTrue(result.find('kill')>=0)
+        self.assertTrue(result.find('process')>=0)
         
     def test_restart(self):
         url='127.0.0.1:8205/restart'
@@ -59,7 +59,7 @@ class CurlTest(unittest.TestCase):
         print(cmd)
         result=subprocess.check_output(cmd,shell=True).decode('utf-8')
         print(result)
-        self.assertTrue(result.find('restart')>=0)
+        self.assertTrue(result.find('process')>=0)
         
 if __name__ == '__main__':
     unittest.main()
