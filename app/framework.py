@@ -8,9 +8,8 @@ import requests
 import subprocess
 from multiprocessing import Process, Queue
 from sqlalchemy.ext.automap import automap_base
-from sqlalchemy import Table,MetaData,create_engine,func
-from sqlalchemy.orm import sessionmaker,Session
-import warnings
+from sqlalchemy import create_engine,func
+from sqlalchemy.orm import Session
 import numpy as np
 import torch
 import sys
@@ -75,7 +74,7 @@ class QD_Reader():
                 fontFace = cv2.FONT_HERSHEY_SIMPLEX
                 warn_img=cv2.putText(warn_img,text=self.video_url,org=(300,0),fontFace=fontFace,fontScale=2,color=(255,0,0),thickness=2)
                 self.time_used=0
-                warnings.warn('use warning image for bad rtsp {}'.format(self.video_url))
+                logging.warn('use warning image for bad rtsp {}'.format(self.video_url))
                 return True,warn_img
             else:
                 return self.read()
@@ -215,7 +214,7 @@ class QD_Detector(QD_Basic):
         elif task_name in ['helmet_detection','detection_helmet']:
             task_name='helmet_detection'
         else:
-            warnings.warn('unknown task name {}'.format(task_name))
+            logging.warn('unknown task name {}'.format(task_name))
             raise Exception('unknwn task name {}'.format(task_name))
         
         for model in self.cfg.models:
@@ -374,7 +373,7 @@ class QD_Upload():
             if result['success']:
                 return result['fileUrl']
             else:
-                warnings.warn('upload {} failed'.format(filename))
+                logging.warn('upload {} failed'.format(filename))
                 return ''
             
         return ''

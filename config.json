@@ -1,0 +1,46 @@
+{"host":"222.173.73.19", "user": "root", "passwd": "xfsdbpasswd", "port": 10020, "database": "XFCMSDB",
+"upload_url":"http://222.173.73.19:8762/mtrp/file/json/upload.jhtml",
+"video_url":"rtsp://admin:juancheng1@221.1.215.254:554",
+"task_name":"car_detection",
+"others":{"device_id":45,"channel_no":1,"algorithm_id":1,"algorithm_name":"车辆识别",
+"recognition_type":{"truck":"卡车"}
+},
+"save_frame_number":9000,
+"models": [
+    {
+      "name":"digger_cls2_20190718",
+      "task_name":"excavator_detection",
+      "cfg": "yzbx/yolov3_cls2.cfg",
+      "data_cfg": "yzbx/digger_cls2_20190718.data",
+      "weights": "weights/digger_cls2_20190718/latest.pt"
+    },
+    {
+      "name":"helmet_cls2_20190718",
+      "task_name":"helmet_detection",
+      "cfg": "yzbx/yolov3_cls2.cfg",
+      "data_cfg": "yzbx/helmet_cls2_20190718.data",
+      "weights": "weights/helmet_cls2_20190718/latest.pt"
+    },
+    {
+      "name":"spp_digger_cls2_20190720",
+      "task_name":"excavator_detection",
+      "cfg": "yzbx/yolov3_cls2.cfg",
+      "data_cfg": "yzbx/digger_cls2_20190720.data",
+      "weights": "weights/spp_digger_cls2_20190720/latest.pt"
+    },
+    {
+      "name":"yolov3-spp",
+      "task_name":"car_detection",
+      "cfg": "yzbx/yolov3-spp.cfg",
+      "data_cfg": "yzbx/coco.data",
+      "weights": "yzbx/yolov3-spp.weights"
+    },
+    {
+      "name":"yolov3",
+      "task_name":"car_detection",
+      "cfg": "yzbx/yolov3.cfg",
+      "data_cfg": "yzbx/coco.data",
+      "weights": "yzbx/yolov3.weights"
+    }
+  ]
+}
