@@ -2,9 +2,7 @@
 "upload_url":"http://222.173.73.19:8762/mtrp/file/json/upload.jhtml",
 "video_url":"rtsp://admin:juancheng1@221.1.215.254:554",
 "task_name":"car_detection",
-"others":{"device_id":45,"channel_no":1,"algorithm_id":1,"algorithm_name":"车辆识别",
-"recognition_type":{"truck":"卡车"}
-},
+"others":{"device_id":45,"channel_no":1,"algorithm_id":1},
 "save_frame_number":9000,
 "models": [
     {
