@@ -270,6 +270,7 @@ class QD_Alerter(QD_Basic):
     
     def process(self,image,bbox):
         filename=os.path.join('static',str(time.time())+'.jpg')
+        os.makedirs(os.path.dirname(filename),exist_ok=True)
         cv2.imwrite(filename,image)
         self.filenames.append(filename)
         
@@ -429,6 +430,9 @@ def save_and_upload(image_names,save_video_name,queue,upload=True):
     """
     save the image in video and upload it
     """
+    with open('config.json','r') as f:
+        config=json.load(f)
+            
     codec = cv2.VideoWriter_fourcc(*"mp4v")
 #    codec = cv2.VideoWriter_fourcc(*'X264')
 #    codec=0x21
@@ -436,30 +440,34 @@ def save_and_upload(image_names,save_video_name,queue,upload=True):
 #    codec = cv2.VideoWriter_fourcc(*'avc1')
 #    codec = cv2.VideoWriter_fourcc(*'MP4V')
 #    codec = cv2.VideoWriter_fourcc(*'H264')
-    fps=30
+    fps=config['save_frame_rate']
     writer = None
     
     for f in image_names:
         img=cv2.imread(f)
         if writer is None:
             height,width=img.shape[0:2]
+            os.makedirs(os.path.dirname(save_video_name),exist_ok=True)
             writer=cv2.VideoWriter(save_video_name,
                             codec, fps,
                             (width, height))
         
         writer.write(img)
-        
+    
     writer.release()
+    logging.info('write {} images with fps={} into video'.format(len(image_names),fps))
     
     convert_video_name=os.path.join('static','x264_'+os.path.basename(save_video_name))
     convert_cmd='ffmpeg -i {} -vcodec h264 {}'.format(save_video_name,convert_video_name)
     subprocess.run(convert_cmd,shell=True)
         
     if not os.path.exists(save_video_name):
+        logging.warn('cannot save images to {video}'.format(video=save_video_name))
         raise Exception('cannot save images to {video}'.format(video=save_video_name))
         queue.put('')
     
     if not os.path.exists(convert_video_name):
+        logging.warn('cannot convert {in_video} to {out_video}'.format(in_video=save_video_name,out_video=convert_video_name))
         raise Exception('cannot convert {in_video} to {out_video}'.format(in_video=save_video_name,out_video=convert_video_name))
         queue.put('')
     

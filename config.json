@@ -4,6 +4,7 @@
 "task_name":"car_detection",
 "others":{"device_id":45,"channel_no":1,"algorithm_id":1},
 "save_frame_number":9000,
+"save_frame_rate":30,
 "models": [
     {
       "name":"digger_cls2_20190718",
