@@ -207,12 +207,16 @@ class QD_Detector(QD_Basic):
             task_name='car_detection'
         
         opt=edict()
-        if task_name in ['car_detection','detection_car']:
-            task_name='car_detection'
-        elif task_name in ['excavator_detection','detection_excavator','truck_detection','detection_truck']:
-            task_name='excavator_detection'
-        elif task_name in ['helmet_detection','detection_helmet']:
-            task_name='helmet_detection'
+        if task_name.find('car')>=0:
+            task_name='car'
+        elif task_name.find('excavator')>=0:
+            task_name='excavator'
+        elif task_name.find('truck')>=0:
+            task_name='truck'
+        elif task_name.find('helmet_color')>=0:
+            task_name='helmet_color'
+        elif task_name.find('helmet')>=0:
+            task_name='helmet'
         else:
             logging.warn('unknown task name {}'.format(task_name))
             raise Exception('unknwn task name {}'.format(task_name))
@@ -294,7 +298,7 @@ class QD_Alerter(QD_Basic):
                     self.writers[idx]=None
                     fileUrl=writer.queue.get()
                     writer.update_database(fileUrl)
-                    logging.info('update database fileUrl is {fileUrl}'.format(fileUrl=fileUrl))
+                    logging.info('update database fileUrl is {fileUrl}'.format(fileUrl=os.path.join(self.cfg.view_url,fileUrl)))
             else:
                 writer.write_sync(filename)
         
