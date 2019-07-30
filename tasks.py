@@ -205,7 +205,7 @@ def stop_task():
         return json.dumps(generate_response(3,
                                          video_url=data['video_url'],
                                          app_name='stop_task',
-                                         succeed=1,
+                                         succeed=0,
                                          pid=pid,
                                          error_string=e.__str__()))
     else:

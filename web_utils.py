@@ -30,29 +30,27 @@ def get_data(request,name):
     return True,value
 
 def detection(data):
-    if data['task_name']=='car_detection':
-        with open('config.json','r') as f:
-            config=json.load(f)
+    with open('config.json','r') as f:
+        config=json.load(f)
 
-        config['video_url']=data['video_url']
-        config['task_name']=data['task_name']
-        
-        try:
-            others=json.loads(data['others'])
-            for key,value in others.items():
-                config['others'][key]=value
-            logging.info('update others {}'.format(others))
-        except:
-            logging.warn('bad others format {}'.format(data['others']))
+    config['video_url']=data['video_url']
+    config['task_name']=data['task_name']
 
-        try:
-            p=QD_Process(config)
-            p.process()
-        except Exception as e:
-            raise Exception('cannot start task because {}'.format(e.__str__()))
-    else:
-        raise Exception('no such task name')
-    
+    try:
+        logging.info('parse others {}'.format(data['others']))
+        others=json.loads(data['others'])
+        for key,value in others.items():
+            config['others'][key]=value
+        logging.info('update others {}'.format(others))
+    except:
+        logging.warn('bad others format {}'.format(data['others']))
+
+    try:
+        p=QD_Process(config)
+        p.process()
+    except Exception as e:
+        raise Exception('cannot start task because {}'.format(e.__str__()))
+
     return 0
 
 def detection_demo(data):
@@ -75,14 +73,14 @@ def detection_demo(data):
                 q.put(None)
                 raise Exception('cannot start demo because {}'.format(e.__str__()))
                 break
-    
+
     if data['task_name']:
         with open('config.json','r') as f:
             config=json.load(f)
 
         config['video_url']=data['video_url']
         config['task_name']=data['task_name']
-        
+
         try:
             others=json.loads(data['others'])
             for key,value in others.items():
@@ -95,7 +93,7 @@ def detection_demo(data):
             queue=Queue()
             sub_process=Process(target=write_to_queue,args=(config,queue))
             sub_process.start()
-            
+
             while True:
                 image=queue.get()
                 if image is not None:
@@ -107,7 +105,7 @@ def detection_demo(data):
                     sub_process.join()
                     logging.warn('raise exception')
                     raise StopIteration('not image offered')
-                    
+
         except Exception as e:
             raise Exception('cannot start task because {}'.format(e.__str__()))
     else:
@@ -119,7 +117,7 @@ def kill_all_subprocess(root_pid=None):
     if root_pid is not None:
         kill root_pid
     """
-    
+
     def kill_group(pid):
         """
         kill pid and it's child
@@ -128,9 +126,9 @@ def kill_all_subprocess(root_pid=None):
         childs=p.children()
         for c in childs:
             kill_group(c.pid)
-        
+
         p.kill()
-            
+
     p = psutil.Process(root_pid)
     childs=p.children()
     for c in childs:
