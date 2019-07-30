@@ -59,7 +59,7 @@ def log():
     with open('qd.log','r') as f:
         content=f.read()
         return content.replace('\n','<br>').replace(' ','&nbsp')
-    
+
 @flask_app.route('/status')
 def status():
     global app_config
@@ -85,7 +85,7 @@ def error():
                                              error_string='cannot obtain data {}'.format(key)))
         else:
             data[key]=value
-    
+
 #    os.execv(__file__, sys.argv)
     error_string="pid={pid} \n out of gpu memory".format(pid=os.getpid())
     return json.dumps(generate_response(2,
@@ -99,7 +99,7 @@ def restart():
     just restart demo, kill demo pid
     """
     global app_config
-    
+
     data={'flag':'False'}
     for key in data.keys():
         flag,value=get_data(request,key)
@@ -125,19 +125,26 @@ def start_task():
                                              error_string='cannot obtain data {}'.format(key)))
         else:
             data[key]=value
-    
+
     if not check_rtsp(data['video_url']):
         return json.dumps(generate_response(3,
                                   app_name='start_demo',
                                   video_url=data['video_url'],
                                   error_string="cannot open rtsp"))
-    
+
     pid=get_app_id(data)
-    if pid!=-1:
+    if pid!=-1 and psutil.pid_exists(pid):
         return json.dumps(generate_response(2,video_url=data['video_url'],
                                          app_name='start_task',
                                          error_string='already has process running for {}/{}'.format(data['video_url'],data['task_name'])))
-    
+    elif pid!=-1 and (not psutil.pid_exists(pid)):
+        logging.warning("remove invalid pid {}".format(pid))
+        logging.info(app_config)
+        for d in app_config:
+            if d['pid']==pid:
+                app_config.remove(d)
+        logging.info(app_config)
+
     try:
         proc=multiprocessing.Process(target=detection,args=[data])
         proc.start()
@@ -164,7 +171,7 @@ def task_result(pid):
                                          app_name='task_result',
                                          succeed=1,pid=pid,
                                          error_string=e.__str__()))
-    
+
     result={}
     result['pid']=p.pid
     result['status']=p.status()
@@ -174,7 +181,7 @@ def task_result(pid):
 @flask_app.route('/stop_task',methods=['POST','GET'])
 def stop_task():
     global app_config
-    
+
     data={'video_url':None,'task_name':None}
     for key in data.keys():
         flag,value=get_data(request,key)
@@ -236,7 +243,7 @@ def start_demo():
                                              error_string='cannot obtain data {}'.format(key)))
         else:
             data[key]=value
-            
+
     if not check_rtsp(data['video_url']):
         return json.dumps(generate_response(3,
                                   app_name='start_demo',
@@ -249,7 +256,7 @@ def start_demo():
         for child in main.children():
             if child.pid not in bg_pids:
                 kill_all_subprocess(child.pid)
-            
+
         with open('config.json','r') as f:
             config=json.load(f)
         config['video_url']=data['video_url']
