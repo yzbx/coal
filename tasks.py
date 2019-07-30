@@ -60,6 +60,11 @@ def log():
         content=f.read()
         return content.replace('\n','<br>').replace(' ','&nbsp')
 
+@flask_app.route('/bg_tasks')
+def bg_tasks():
+    global app_config
+    return app_config.__str__()
+
 @flask_app.route('/status')
 def status():
     global app_config
@@ -125,6 +130,12 @@ def start_task():
                                              error_string='cannot obtain data {}'.format(key)))
         else:
             data[key]=value
+
+    if len(app_config) >= 3:
+        return json.dumps(generate_response(4,
+                                  app_name='start_demo',
+                                  video_url=data['video_url'],
+                                  error_string="two many background process"))
 
     if not check_rtsp(data['video_url']):
         return json.dumps(generate_response(3,
