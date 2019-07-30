@@ -5,7 +5,7 @@ import json
 import time
 import os
 
-class WebTest(unittest.TestCase):  
+class WebTest(unittest.TestCase):
     def test_json(self):
         cfg={
             'host':"10.0.0.39",
@@ -15,7 +15,7 @@ class WebTest(unittest.TestCase):
             'database':'qingdao',
             'upload_url':'http://10.50.200.171:8080/mtrp/file/json/upload.jhtml',
             "video_url":"rtsp://admin:juancheng1@221.1.215.254:554",
-            "task_name":"car_detection",
+            "task_name":"car",
             "others":{"a":1,"b":2},
           }
 
@@ -39,6 +39,6 @@ class WebTest(unittest.TestCase):
             f.close()
 
         self.assertTrue(r.status_code==200 and r.ok)
-        
+
 if __name__ == '__main__':
     unittest.main()

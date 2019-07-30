@@ -13,12 +13,12 @@ video_url: <input list="video_list" type="text" value={{video_url}} name="video_
     <option value="rtsp://admin:Chinsoft@sx3.7766.org:954">sx3.7766.org</option>
 </datalist>
 <br>
-task_name: 
+task_name:
 <select name="task_name" value={{task_name}} >
-    <option value="car_detection">汽车检测</option>
-    <option value="excavator_detection">挖掘机检测</option>
-    <option value="helmet_detection">安全帽检测</option>
-    <option value="truck_detection">卡车检测</option>
+    <option value="car">汽车检测</option>
+    <option value="excavator">挖掘机检测</option>
+    <option value="helmet">安全帽检测</option>
+    <option value="truck">卡车检测</option>
 </select>
 <br>
 others: <input type="text" maxlength=2560 name="others"></input>
@@ -35,19 +35,19 @@ others example:
 <form action="/stop_task" method="post">
 video_url: <input list="video_list" type="text" value={{video_url}} name="video_url" />
 <br>
-task_name: 
+task_name:
 <select name="task_name" value={{task_name}} >
-    <option value="car_detection">汽车检测</option>
-    <option value="excavator_detection">挖掘机检测</option>
-    <option value="helmet_detection">安全帽检测</option>
-    <option value="truck_detection">卡车检测</option>
+    <option value="car">汽车检测</option>
+    <option value="excavator">挖掘机检测</option>
+    <option value="helmet">安全帽检测</option>
+    <option value="truck">卡车检测</option>
 </select>
 <br>
 others: <input type="text" maxlength=2560 name="others"></input>
 <br>
 <input type="submit" value="Submit" />
 </form>
-  
+
 <video width="320" height="240" controls="controls" autoplay="autoplay">
   <source src="/static/x264_test.mp4" type="video/mp4">
 Your browser does not support the video tag.

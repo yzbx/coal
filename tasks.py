@@ -227,7 +227,7 @@ def demo():
     return render_template('demo.html',
                             title='demo',
                             video_url='rtsp://admin:juancheng1@221.1.215.254:554',
-                            task_name='detection_car',
+                            task_name='car',
                             others='{"date":"%s"}'%date)
 
 @flask_app.route('/start_demo',methods=['POST','GET'])
