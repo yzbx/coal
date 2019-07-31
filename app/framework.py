@@ -207,7 +207,9 @@ class QD_Detector(QD_Basic):
             task_name='car'
 
         opt=edict()
-        if task_name.find('car')>=0:
+        if task_name.startswith('test'):
+            pass
+        elif task_name.find('car')>=0:
             task_name='car'
         elif task_name.find('excavator')>=0:
             task_name='excavator'
