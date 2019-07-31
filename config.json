@@ -24,14 +24,14 @@
     {
       "name":"helmet_cls7_20190730",
       "task_name":"helmet_color",
-      "cfg": "yzbx/yolov3_cls7.cfg",
+      "cfg": "yzbx/yolov3-spp_cls7.cfg",
       "data_cfg": "yzbx/helmet_cls7_20190730.data",
       "weights": "weights/Thelmet_cls7_20190730/best.pt"
     },
     {
       "name":"helmet_cls7_20190729",
       "task_name":"test_helmet_color",
-      "cfg": "yzbx/yolov3_cls7.cfg",
+      "cfg": "yzbx/yolov3-spp_cls7.cfg",
       "data_cfg": "yzbx/helmet_cls7_20190729.data",
       "weights": "weights/Thelmet_cls7_20190729/latest.pt"
     },
