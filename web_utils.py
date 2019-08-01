@@ -46,6 +46,8 @@ def detection(data):
         logging.warn('bad others format {}'.format(data['others']))
 
     try:
+        pid=psutil.Process().pid
+        config['redis_key']=str(pid)
         p=QD_Process(config)
         p.process()
     except Exception as e:
@@ -91,6 +93,8 @@ def detection_demo(data):
 
         try:
             queue=Queue()
+            pid=psutil.Process().pid
+            config['redis_key']=str(pid)
             sub_process=Process(target=write_to_queue,args=(config,queue))
             sub_process.start()
 

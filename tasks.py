@@ -18,6 +18,7 @@ import signal
 from app.app_utils import gen_imencode,check_rtsp,get_status
 from app.framework import QD_Process
 import logging
+import redis
 
 flask_app = Flask(__name__,static_url_path='/static')
 
@@ -116,6 +117,23 @@ def restart():
         return redirect(url_for('status'))
     else:
         return "hello world"
+
+@flask_app.route('/redis',methods=['POST','GET'])
+def get_data_from_redis():
+    data={'pid':None}
+    for key in data.keys():
+        flag,value=get_data(request,key)
+        if flag:
+            data[key]=value
+        else:
+            json.dumps(generate_response(2,
+                                  app_name='redis',
+                                  video_url='',
+                                  error_string='cannot obtain data {}'.format(key)))
+
+    d=redis.Redis()
+    result=d.rpop(str(data['pid']))
+    return result
 
 @flask_app.route('/start_task', methods=['POST', 'GET'])
 def start_task():

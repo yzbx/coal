@@ -18,6 +18,8 @@ if '.' not in sys.path:
 sys.path.insert(0,'./model/yolov3')
 from app.algorithm import yolov3_slideWindows
 import logging
+import redis
+import psutil
 
 class QD_Basic():
     def __init__(self,cfg):
@@ -320,6 +322,7 @@ class QD_Process(QD_Basic):
         super().__init__(cfg)
         self.queue=None
         self.sub_process=None
+        self.redis=redis.Redis()
         try:
             self.reader=QD_Reader(self.cfg.video_url)
             self.detector=QD_Detector(self.cfg)
@@ -329,12 +332,24 @@ class QD_Process(QD_Basic):
 
         logging.info(json.dumps(cfg))
 
+    def save_to_redis(self,img,bbox):
+        #pid=psutil.Process().pid
+        key=self.cfg.redis_key
+        retval, buffer = cv2.imencode('.jpg', img)
+        img_bytes = np.array(buffer).tostring()
+        result={'bbox':bbox,'img_bytes':img_bytes}
+        # insert result to redis list with name key
+        self.redis.lpush(key,json.dumps(result))
+        # limit redis list with name key's size to 3
+        self.redis.ltrim(key,0,3)
+
     def process(self):
         while True:
             # flag,frame=self.reader.read()
             flag,frame=self.reader.read_from_queue()
             if flag:
                 image,bbox=self.detector.process(frame)
+                self.save_to_redis(image,bbox)
                 self.alerter.process(image,bbox)
             else:
                 raise StopIteration('read frame failed!!!')

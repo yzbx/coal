@@ -59,3 +59,7 @@ engine = create_engine('sqlite:////absolute/path/to/foo.db')
 
 ### video stream
 - https://github.com/miguelgrinberg/flask-video-streaming video streaming with Flask + gunicorn + gevent/eventlet
+
+## reference
+- [docker start multi service](https://docs.docker.com/config/containers/multi-service_container/)
+- [deep learning + redis + flask + apache](https://www.pyimagesearch.com/2018/02/05/deep-learning-production-keras-redis-flask-apache/)
