@@ -1,22 +1,17 @@
 #!/usr/bin/env python
 
-from flask import Flask,Response,stream_with_context
+from flask import (
+        Flask,Response,stream_with_context,request,
+        render_template,redirect,url_for
+        )
 from web_utils import detection,detection_demo,generate_response,get_data,kill_all_subprocess
-from flask import request, jsonify, flash, send_from_directory
-from flask import render_template,redirect,url_for
-import subprocess
 import multiprocessing
 import psutil
 import time
 import json
 import argparse
 import os
-import requests
-import os
-import sys
-import signal
 from app.app_utils import gen_imencode,check_rtsp,get_status
-from app.framework import QD_Process
 import logging
 import redis
 
@@ -25,6 +20,7 @@ flask_app = Flask(__name__,static_url_path='/static')
 logging.basicConfig(filename='qd.log',
                     level=logging.INFO,
                     format='%(asctime)s %(levelname)s %(filename)s %(funcName)s %(lineno)d %(message)s')
+
 # record video_url, task_name and pid
 app_config=[]
 
@@ -118,7 +114,7 @@ def restart():
     else:
         return "hello world"
 
-@flask_app.route('/redis',methods=['POST','GET'])
+@flask_app.route('/use_redis',methods=['POST','GET'])
 def get_data_from_redis():
     data={'pid':None}
     for key in data.keys():

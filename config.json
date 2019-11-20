@@ -3,7 +3,7 @@
 "view_url":"222.173.73.19:8761",
 "video_url":"rtsp://admin:juancheng1@221.1.215.254:554",
 "task_name":"car",
-"redis_key":"test"
+"redis_key":"test",
 "others":{"device_id":45,"channel_no":1,"algorithm_id":1},
 "save_frame_number":225,
 "save_frame_rate":15,

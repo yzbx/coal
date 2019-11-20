@@ -19,7 +19,6 @@ sys.path.insert(0,'./model/yolov3')
 from app.algorithm import yolov3_slideWindows
 import logging
 import redis
-import psutil
 
 class QD_Basic():
     def __init__(self,cfg):
