@@ -75,7 +75,7 @@ class QD_Reader():
                 fontFace = cv2.FONT_HERSHEY_SIMPLEX
                 warn_img=cv2.putText(warn_img,text=self.video_url,org=(300,0),fontFace=fontFace,fontScale=2,color=(255,0,0),thickness=2)
                 self.time_used=0
-                logging.warn('use warning image for bad rtsp {}'.format(self.video_url))
+                logging.warning('use warning image for bad rtsp {}'.format(self.video_url))
                 return True,warn_img
             else:
                 return self.read()
@@ -210,6 +210,8 @@ class QD_Detector(QD_Basic):
         opt=edict()
         if task_name.startswith('test'):
             pass
+        elif task_name.find('people')>=0:
+            task_name='people'
         elif task_name.find('car')>=0:
             task_name='car'
         elif task_name.find('excavator')>=0:
@@ -221,7 +223,7 @@ class QD_Detector(QD_Basic):
         elif task_name.find('helmet')>=0:
             task_name='helmet'
         else:
-            logging.warn('unknown task name {}'.format(task_name))
+            logging.warning('unknown task name {}'.format(task_name))
             raise Exception('unknwn task name {}'.format(task_name))
 
         for model in self.cfg.models:
@@ -237,7 +239,9 @@ class QD_Detector(QD_Basic):
         return opt
 
     def process(self,frame):
-        image,bbox=self.detector.process_slide(frame)
+        #BUG process_slide has bug
+        # image,bbox=self.detector.process_slide(frame)
+        image,bbox=self.detector.process(frame)
         return image,bbox
 
     def __del__(self):
@@ -385,19 +389,39 @@ class QD_Upload():
 
         {"success":false}
         """
-        with open(filename,'rb') as f:
-            files = {'upload': f}
-            r = requests.post(self.upload_url, files=files)
-            r.close()
-            result=json.loads(r.content)
+#        with open(filename,'rb') as f:
+#            files = {'upload': f}
+#            r = requests.post(self.upload_url, files=files)
+#            r.close()
+#            result=json.loads(r.content)
+#
+#            if result['success']:
+#                return result['fileUrl']
+#            else:
+#                logging.warning('upload {} failed'.format(filename))
+#                print(result)
+#                return ''
 
-            if result['success']:
-                return result['fileUrl']
-            else:
-                logging.warn('upload {} failed'.format(filename))
-                return ''
+        try:
+            headers = {"swagger-token":"yingji1"}
+            with open(filename, 'rb') as f:
+                files = {
+                    'file': f,
+                    #'deviceId': (None, str(others['deviceId'])),
+                    #'channelId': (None, str(others['channelId'])),
+                    #'algoId': (None, str(others['algoId'])),
+                }
+                r = requests.post(self.upload_url, files=files, headers=headers)
+                r.close()
+                result = json.loads(r.content.decode())
 
-        return ''
+                if not result['success']:
+                    logging.warn('upload image {} failed'.format(filename))
+        except Exception as e:
+            logging.warn(Exception(e.__str__()))
+
+        print(result)
+        return result['data']['path']
 
 class QD_Database(QD_Basic):
     def __init__(self,cfg):
@@ -412,7 +436,7 @@ class QD_Database(QD_Basic):
 
         Base.prepare(self.engine,reflect=True)
         self.Mtrp_Alarm=Base.classes.mtrp_alarm
-        self.Mtrp_Alarm_Type=Base.classes.mtrp_alarm_type
+        #self.Mtrp_Alarm_Type=Base.classes.mtrp_alarm_type
         self.session=Session(self.engine)
 
     def __exit__(self):
@@ -482,12 +506,12 @@ def save_and_upload(image_names,save_video_name,queue,upload=True):
     subprocess.run(convert_cmd,shell=True)
 
     if not os.path.exists(save_video_name):
-        logging.warn('cannot save images to {video}'.format(video=save_video_name))
+        logging.warning('cannot save images to {video}'.format(video=save_video_name))
         raise Exception('cannot save images to {video}'.format(video=save_video_name))
         queue.put('')
 
     if not os.path.exists(convert_video_name):
-        logging.warn('cannot convert {in_video} to {out_video}'.format(in_video=save_video_name,out_video=convert_video_name))
+        logging.warning('cannot convert {in_video} to {out_video}'.format(in_video=save_video_name,out_video=convert_video_name))
         raise Exception('cannot convert {in_video} to {out_video}'.format(in_video=save_video_name,out_video=convert_video_name))
         queue.put('')
 

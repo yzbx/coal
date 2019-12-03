@@ -140,10 +140,10 @@ def merge_bbox(bboxes,target_size,origin_size,conf_thres=0.5,nms_thres=0.5):
 
 def filter_label(det,classes,device):
     if 'bicycle' in classes:
-        filter_classes=['car','bicycle','motorbike','truck']
+        filter_classes=['car','bicycle','motorbike','truck','person']
     else:
         return det
-    
+
     if det is not None:
         det_idx=[]
         for c in det[:,-1]:
@@ -188,6 +188,7 @@ class yolov3_slideWindows(yolov3_loadImages):
         det = non_max_suppression(pred, conf_thres, nms_thres)[0]
         batch_det=filter_label(det,self.classes,self.device)
         draw_origin_img=frame.copy()
+        det_dicts=[]
         if batch_det is not None and len(batch_det)>0:
             batch_det[:, :4] = scale_coords(img.shape[2:], batch_det[:, :4], frame.shape).round()
             # Draw bounding boxes and labels of detections
@@ -195,7 +196,8 @@ class yolov3_slideWindows(yolov3_loadImages):
                 # Add bbox to the image
                 label = '%s %.2f' % (self.classes[int(cls)], conf)
                 plot_one_box(xyxy, draw_origin_img, label=label, color=self.colors[int(cls)])
-        return draw_origin_img,batch_det
+                det_dicts.append({'bbox':list(xyxy),'conf':conf,'label':self.classes[int(cls)]})
+        return draw_origin_img,det_dicts
 
     def process_slide(self,frame,conf_thres=0.5,nms_thres=0.5):
         if min(frame.shape[0:2]) <= max(self.img_size):

@@ -1,8 +1,8 @@
-{"host":"222.173.73.19", "user": "root", "passwd": "xfsdbpasswd", "port": 10020, "database": "XFCMSDB",
-"upload_url":"http://222.173.73.19:8762/mtrp/file/json/upload.jhtml",
-"view_url":"222.173.73.19:8761",
-"video_url":"rtsp://admin:juancheng1@221.1.215.254:554",
-"task_name":"car",
+{"host":"39.100.33.73", "user": "root", "passwd": "root", "port": 3306, "database": "alarm",
+"upload_url":"http://39.100.250.108:8090/flysafety/attach/upload",
+"view_url":"",
+"video_url":"rtsp://admin:BQMXXM@10.0.0.37:554",
+"task_name":"people",
 "redis_key":"test",
 "others":{"device_id":45,"channel_no":1,"algorithm_id":1},
 "save_frame_number":225,
@@ -46,6 +46,13 @@
     {
       "name":"yolov3-spp",
       "task_name":"car",
+      "cfg": "yzbx/yolov3-spp.cfg",
+      "data_cfg": "yzbx/coco.data",
+      "weights": "yzbx/yolov3-spp.weights"
+    },
+    {
+      "name":"yolov3-spp",
+      "task_name":"people",
       "cfg": "yzbx/yolov3-spp.cfg",
       "data_cfg": "yzbx/coco.data",
       "weights": "yzbx/yolov3-spp.weights"
