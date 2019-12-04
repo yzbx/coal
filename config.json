@@ -2,7 +2,7 @@
 "upload_url":"http://39.100.250.108:8090/flysafety/attach/upload",
 "view_url":"",
 "video_url":"rtsp://admin:BQMXXM@10.0.0.37:554",
-"task_name":"people",
+"task_name":"person",
 "redis_key":"test",
 "others":{"device_id":45,"channel_no":1,"algorithm_id":1},
 "save_frame_number":225,
@@ -52,7 +52,7 @@
     },
     {
       "name":"yolov3-spp",
-      "task_name":"people",
+      "task_name":"person",
       "cfg": "yzbx/yolov3-spp.cfg",
       "data_cfg": "yzbx/coco.data",
       "weights": "yzbx/yolov3-spp.weights"

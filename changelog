@@ -1,0 +1,3 @@
+# 2019/12/03
+- change config and algorithm, table, upload interface.
+    - insert videoPath and imgPath to table, replace fileUrl(origin videoPath)

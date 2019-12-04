@@ -196,7 +196,7 @@ class yolov3_slideWindows(yolov3_loadImages):
                 # Add bbox to the image
                 label = '%s %.2f' % (self.classes[int(cls)], conf)
                 plot_one_box(xyxy, draw_origin_img, label=label, color=self.colors[int(cls)])
-                det_dicts.append({'bbox':list(xyxy),'conf':conf,'label':self.classes[int(cls)]})
+                det_dicts.append({'bbox':[float(x.detach()) for x in xyxy],'conf':float(conf.detach()),'label':self.classes[int(cls)]})
         return draw_origin_img,det_dicts
 
     def process_slide(self,frame,conf_thres=0.5,nms_thres=0.5):
@@ -232,7 +232,7 @@ class yolov3_slideWindows(yolov3_loadImages):
                 # Add bbox to the image
                 label = '%s %.2f' % (self.classes[int(cls)], conf)
                 plot_one_box(xyxy, draw_origin_img, label=label, color=self.colors[int(cls)])
-                det_dicts.append({'bbox':list(xyxy),'conf':conf,'label':self.classes[int(cls)]})
+                det_dicts.append({'bbox':[float(x.detach()) for x in xyxy],'conf':float(conf.detach()),'label':self.classes[int(cls)]})
         else:
             merged_det=None
 

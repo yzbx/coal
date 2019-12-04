@@ -210,8 +210,8 @@ class QD_Detector(QD_Basic):
         opt=edict()
         if task_name.startswith('test'):
             pass
-        elif task_name.find('people')>=0:
-            task_name='people'
+        elif task_name.find('person')>=0:
+            task_name='person'
         elif task_name.find('car')>=0:
             task_name='car'
         elif task_name.find('excavator')>=0:
@@ -316,7 +316,7 @@ class QD_Alerter(QD_Basic):
         if rule and self.cooling_time<=0:
             self.cooling_time=self.save_frame_number//2
             writer=QD_Writer(self.cfg,rule,self.filenames)
-            writer.insert_database(rule)
+            writer.insert_database({'content':rule,'bbox':json.dumps(bbox)})
             logging.info('insert database rule is {}'.format(rule))
             self.writers.append(writer)
 
@@ -416,12 +416,14 @@ class QD_Upload():
                 result = json.loads(r.content.decode())
 
                 if not result['success']:
-                    logging.warn('upload image {} failed'.format(filename))
-        except Exception as e:
-            logging.warn(Exception(e.__str__()))
+                    logging.warning('upload image {} failed'.format(filename))
 
-        print(result)
-        return result['data']['path']
+                return result['data']['path']
+        except Exception as e:
+            logging.warning(e.__str__())
+            return 'upload failed!'
+
+
 
 class QD_Database(QD_Basic):
     def __init__(self,cfg):
@@ -442,13 +444,16 @@ class QD_Database(QD_Basic):
     def __exit__(self):
         self.session.close()
 
-    def insert(self,content,event_id=1):
+    def insert(self,data_dict,event_id=1):
         alarm=self.Mtrp_Alarm()
         alarm.alarmTime=datetime.datetime.now()
-        alarm.content=content
+        alarm.content=data_dict['content']
+        alarm.bbox=data_dict['bbox']
         alarm.fileUrl=''
+        alarm.imgPath=''
         alarm.event_id=event_id
         alarm.logID=0
+        alarm.alarm_type=self.cfg.task_name
         alarm.device_id=self.cfg.others.device_id
         alarm.channel_no=self.cfg.others.channel_no
         alarm.createTime=datetime.datetime.now()
@@ -462,7 +467,8 @@ class QD_Database(QD_Basic):
         return alarm.id
 
     def update(self,id,fileUrl):
-        self.session.query(self.Mtrp_Alarm).filter_by(id=id).update({'fileUrl':fileUrl})
+        videoPath,imgPath=fileUrl
+        self.session.query(self.Mtrp_Alarm).filter_by(id=id).update({'fileUrl':videoPath,'imgPath':imgPath})
         self.session.commit()
 
     def query(self,id):
@@ -508,17 +514,18 @@ def save_and_upload(image_names,save_video_name,queue,upload=True):
     if not os.path.exists(save_video_name):
         logging.warning('cannot save images to {video}'.format(video=save_video_name))
         raise Exception('cannot save images to {video}'.format(video=save_video_name))
-        queue.put('')
+        queue.put(('',''))
 
     if not os.path.exists(convert_video_name):
         logging.warning('cannot convert {in_video} to {out_video}'.format(in_video=save_video_name,out_video=convert_video_name))
         raise Exception('cannot convert {in_video} to {out_video}'.format(in_video=save_video_name,out_video=convert_video_name))
-        queue.put('')
+        queue.put(('',''))
 
     if upload:
         loader=QD_Upload()
-        fileUrl=loader.upload(convert_video_name)
-        queue.put(fileUrl)
+        videoPath=loader.upload(convert_video_name)
+        imgPath=loader.upload(image_names[0])
+        queue.put((videoPath,imgPath))
 
 if __name__ == '__main__':
     with open('config.json','r') as f:
