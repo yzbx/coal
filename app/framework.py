@@ -16,7 +16,7 @@ import sys
 if '.' not in sys.path:
     sys.path.insert(0,'.')
 sys.path.insert(0,'./model/yolov3')
-from app.algorithm import yolov3_slideWindows
+from app.algorithm import yolov3_slideWindows,vgg_fire
 import logging
 import redis
 
@@ -195,7 +195,10 @@ class QD_Detector(QD_Basic):
 
         try:
             opt=self.get_opt()
-            self.detector=yolov3_slideWindows(opt)
+            if cfg['task_name'] == 'fire':
+                self.detector=vgg_fire(opt)
+            else:
+                self.detector=yolov3_slideWindows(opt)
         except Exception as e:
             self.detector=None
             raise Exception(e.__str__())
@@ -222,6 +225,8 @@ class QD_Detector(QD_Basic):
             task_name='helmet_color'
         elif task_name.find('helmet')>=0:
             task_name='helmet'
+        elif task_name=='fire':
+            task_name='fire'
         else:
             logging.warning('unknown task name {}'.format(task_name))
             raise Exception('unknwn task name {}'.format(task_name))

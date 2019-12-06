@@ -97,10 +97,16 @@ class PeopleDetectionTest(unittest.TestCase):
                     plot_one_box(bbox['bbox'], frame, label=bbox['label']+' %0.2f'%(bbox['conf']), color=color)
 
                 frame=cv2.rectangle(img=frame, pt1=tuple(warning_area[0:2]), pt2=tuple(warning_area[2:4]), color=COLOR_AREA, thickness=2)
-                cv2.imshow('person detection',frame)
-                key=cv2.waitKey(30)
-                if key==ord('q'):
-                    break
+
+                try:
+                    cv2.imshow('person detection',frame)
+                    key=cv2.waitKey(30)
+                    if key==ord('q'):
+                        break
+                except:
+                    pass
+
+                print(bbox)
 
                 if writer is None:
                     height,width=frame.shape[0:2]

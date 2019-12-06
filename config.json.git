@@ -4,6 +4,7 @@
 "video_url":"rtsp://admin:BQMXXM@10.0.0.37:554",
 "task_name":"person",
 "redis_key":"test",
+"redis":{"host":"localhost","port":6379,"password":""},
 "others":{"device_id":45,"channel_no":1,"algorithm_id":1},
 "save_frame_number":225,
 "save_frame_rate":15,

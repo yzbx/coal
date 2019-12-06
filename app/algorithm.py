@@ -11,6 +11,7 @@ from model.yolov3.models import Darknet,load_darknet_weights
 from model.yolov3.utils.utils import load_classes, non_max_suppression, scale_coords, plot_one_box, bbox_iou
 from model.yolov3.utils.parse_config import parse_data_cfg
 from model.yolov3.utils.torch_utils import select_device
+from torchvision.models import vgg11
 
 #from model.yolov3.utils.utils import bbox_iou,non_max_suppression
 from app.split_image import split_image,yolov3_loadImages
@@ -239,3 +240,62 @@ class yolov3_slideWindows(yolov3_loadImages):
         if resize_input:
             draw_origin_img=cv2.resize(draw_origin_img,(0, 0),fx=2.0,fy=2.0,interpolation=cv2.INTER_LINEAR)
         return draw_origin_img,det_dicts
+
+def simple_preprocess(image,img_size):
+    # Padded resize
+    img=cv2.resize(image,tuple(img_size),interpolation=cv2.INTER_LINEAR)
+
+    # Normalize RGB
+    img = img[:, :, ::-1].transpose(2, 0, 1)  # BGR to RGB, HWC to CHW
+    img = np.ascontiguousarray(img, dtype=np.float32)  # uint8 to float32
+    img /= 255.0  # 0 - 255 to 0.0 - 1.0
+
+    return img
+
+class vgg_fire():
+    def __init__(self,opt):
+        self.opt=opt
+        self.model=self.load_model()
+
+    def load_model(self):
+        model=vgg11(pretrained=False,num_classes=2)
+        model_path=self.opt.weights
+        model.load_state_dict(torch.load(model_path).state_dict())
+        model.eval()
+        device=torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        model.to(device)
+
+        return model
+
+    def process(self,frame,conf_thres=0.5,nms_thres=None):
+        if nms_thres:
+            warnings.warn('nms_thres not work for classification model vgg_fire')
+
+
+        device=torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        img_size=(224,224)
+        img=simple_preprocess(frame,img_size)
+        inputs=torch.unsqueeze(torch.from_numpy(img),dim=0).to(device)
+        outputs=self.model.forward(inputs)
+        result=torch.softmax(outputs,dim=1).data.cpu().numpy()
+        result=np.squeeze(result)
+
+        names=['normal','fire']
+        text=names[np.argmax(result)]
+        conf=float(max(result))
+        if text==names[1]:
+            color=(0,0,255)
+        else:
+            color=(255,0,0)
+
+        # convert image to [height width channel] format
+        fontScale=max(1,frame.shape[1]//448)
+        thickness=max(1,frame.shape[1]//112)
+        frame=cv2.putText(frame, text+' %0.2f'%(conf) , (50,50), cv2.FONT_HERSHEY_COMPLEX, fontScale, color, thickness)
+
+        return frame,[{'bbox':[0,0,0,0],'conf':conf,'label':text}]
+
+    def process_slide(self,**args):
+        return self.process(args)
+
+
