@@ -127,7 +127,12 @@ def get_data_from_redis():
                                   video_url='',
                                   error_string='cannot obtain data {}'.format(key)))
 
-    d=redis.Redis()
+
+    with open('config.json','r') as f:
+            config=json.load(f)
+
+    password=None if config['redis']['password']=="" else config['redis']['password']
+    d=redis.Redis(host=config['redis']['host'],port=config['redis']['port'],password=password)
     result=d.rpop(str(data['pid']))
     return result
 

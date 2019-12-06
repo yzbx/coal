@@ -17,7 +17,11 @@ import numpy as np
 
 class RedisTest(unittest.TestCase):
     def test_redis(self):
-        r=redis.Redis()
+        with open('config.json','r') as f:
+            config=json.load(f)
+
+        password=None if config['redis']['password']=="" else config['redis']['password']
+        r=redis.Redis(host=config['redis']['host'],port=config['redis']['port'],password=password)
         img_path='test.png'
         img=cv2.imread(img_path)
         retval, buffer = cv2.imencode('.png', img)

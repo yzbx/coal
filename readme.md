@@ -63,3 +63,6 @@ engine = create_engine('sqlite:////absolute/path/to/foo.db')
 ## reference
 - [docker start multi service](https://docs.docker.com/config/containers/multi-service_container/)
 - [deep learning + redis + flask + apache](https://www.pyimagesearch.com/2018/02/05/deep-learning-production-keras-redis-flask-apache/)
+
+## todo
+- [service-streamer boosting web services by queue samples into mini-batches, sacrifice response time](https://github.com/ShannonAI/service-streamer

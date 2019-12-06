@@ -325,7 +325,9 @@ class QD_Process(QD_Basic):
         super().__init__(cfg)
         self.queue=None
         self.sub_process=None
-        self.redis=redis.Redis()
+
+        password=None if cfg['redis']['password']=="" else cfg['redis']['password']
+        self.redis=redis.Redis(host=cfg['redis']['host'],port=cfg['redis']['port'],password=password)
         try:
             self.reader=QD_Reader(self.cfg.video_url)
             self.detector=QD_Detector(self.cfg)

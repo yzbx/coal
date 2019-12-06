@@ -5,6 +5,7 @@ import json
 from app.framework import QD_Detector,QD_Alerter,QD_Writer,QD_Upload
 import cv2
 import os
+import glob
 
 class FireDetectionTest(unittest.TestCase):
     def test_people_detection(self):
